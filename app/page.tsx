@@ -895,27 +895,6 @@ export default function App() {
                     t: "TBD",
                     m: "Fri evening winners \u2014 R2 matchups",
                   },
-                  {
-                    t: "4:30 PM",
-                    m: "Wake Forest vs Illinois State",
-                  },
-                  {
-                    t: "6:30 PM",
-                    m: "(1) Auburn vs Seattle",
-                  },
-                  { t: "7:00 PM", m: "Tulsa vs UNLV" },
-                  {
-                    t: "8:00 PM",
-                    m: "New Mexico vs George Washington",
-                  },
-                  {
-                    t: "8:30 PM",
-                    m: "Oklahoma State vs Wichita State",
-                  },
-                  {
-                    t: "9:00 PM",
-                    m: "California vs Saint Joseph's",
-                  },
                 ],
               },
             ].map((sec, si) => (
