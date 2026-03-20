@@ -106,10 +106,10 @@ function TBadge({ tier }: { tier: number }) {
 }
 
 // ── Row style helper ──
-function rowStyle(hl: boolean, dn: boolean) {
+function rowStyle(hl: boolean, dn: boolean, alive: boolean = false) {
   return {
-    background: dn ? "#1a0808" : hl ? "#140a24" : "#0a0f1a",
-    border: `1px solid ${dn ? "#7f1d1d" : hl ? "#7c3aed" : "#1a2030"}`,
+    background: dn ? "#1a0808" : alive ? "#03160a" : hl ? "#140a24" : "#0a0f1a",
+    border: `1px solid ${dn ? "#7f1d1d" : alive ? "#166534" : hl ? "#7c3aed" : "#1a2030"}`,
   };
 }
 
@@ -484,7 +484,8 @@ export default function App() {
                       className="flex items-center gap-2 px-2.5 py-2 rounded-md flex-wrap"
                       style={rowStyle(
                         isPersonal && p.me,
-                        st === "eliminated" || st === "out"
+                        st === "eliminated" || st === "out",
+                        st === "survived"
                       )}
                     >
                       <span
