@@ -868,10 +868,6 @@ export default function App() {
                     m: "(1) Houston vs (5) Texas A&M",
                   },
                   {
-                    t: "7:00 PM",
-                    m: "UNC Wilmington vs Dayton",
-                  },
-                  {
                     t: "7:10 PM",
                     m: "(3) Gonzaga vs (6) Texas",
                   },
@@ -880,7 +876,6 @@ export default function App() {
                     t: "8:45 PM",
                     m: "(4) Nebraska vs (5) Vanderbilt",
                   },
-                  { t: "9:00 PM", m: "Nevada vs Liberty" },
                   {
                     t: "9:45 PM",
                     m: "(3) Arkansas vs (14) High Point",
