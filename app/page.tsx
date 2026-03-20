@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   computePlayer,
   FUT,
@@ -18,9 +18,9 @@ import resultsData from "@/data/results.json";
 const PERSONAL_PW = "trevorNOVA";
 
 const PLAYERS: PlayerRaw[] = playersData as PlayerRaw[];
-const TEAM_RESULTS: Record<string, Record<string, string>> =
+const INITIAL_TEAM_RESULTS: Record<string, Record<string, string>> =
   resultsData.teamResults;
-const SCORES: Record<string, Record<string, string>> = resultsData.scores;
+const INITIAL_SCORES: Record<string, Record<string, string>> = resultsData.scores;
 const DAYS: DayConfig[] = resultsData.days as DayConfig[];
 
 // ── UI Atoms ──
@@ -123,6 +123,31 @@ export default function App() {
   const [pwError, setPwError] = useState(false);
   const [tab, setTab] = useState("Dashboard");
 
+  // Live score state — initialized from static data for instant render
+  const [teamResults, setTeamResults] = useState(INITIAL_TEAM_RESULTS);
+  const [scores, setScores] = useState(INITIAL_SCORES);
+  const [lastFetched, setLastFetched] = useState<string | null>(null);
+  const [hasLiveGames, setHasLiveGames] = useState(true);
+
+  const fetchScores = useCallback(async () => {
+    try {
+      const res = await fetch("/api/live-scores");
+      const data = await res.json();
+      setTeamResults(data.teamResults);
+      setScores(data.scores);
+      setLastFetched(data.lastFetched);
+      setHasLiveGames(data.hasLiveGames);
+    } catch (e) {
+      console.error("Score fetch failed:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchScores(); // initial fetch
+    const interval = setInterval(fetchScores, hasLiveGames ? 30000 : 300000);
+    return () => clearInterval(interval);
+  }, [fetchScores, hasLiveGames]);
+
   const isPersonal = mode === "personal";
 
   const handleModeToggle = () => {
@@ -165,8 +190,8 @@ export default function App() {
       ];
 
   const players = useMemo(
-    () => PLAYERS.map((p) => computePlayer(p, TEAM_RESULTS, DAYS)),
-    []
+    () => PLAYERS.map((p) => computePlayer(p, teamResults, DAYS)),
+    [teamResults]
   );
   const active = players.filter((p) => !p.isPermElim);
   const pot = players.reduce((s, p) => s + p.money, 0);
@@ -282,7 +307,7 @@ export default function App() {
     );
   }
 
-  const getD2Result = (t: string) => TEAM_RESULTS.day2?.[t] || "pending";
+  const getD2Result = (t: string) => teamResults.day2?.[t] || "pending";
 
   return (
     <div className="font-mono bg-[#080c14] text-slate-200 min-h-screen">
@@ -315,6 +340,15 @@ export default function App() {
           {active.length} alive &middot;{" "}
           {players.filter((p) => p.isPermElim).length} out &middot; Day 2 Fri
           3/20 &middot; Pot: ${pot}
+          {lastFetched && (
+            <span className="ml-2">
+              &middot;{" "}
+              <span className={hasLiveGames ? "text-green-500" : "text-slate-600"}>
+                {hasLiveGames ? "\u25c9 Live" : "Final"}{" "}
+                {new Date(lastFetched).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+              </span>
+            </span>
+          )}
         </p>
         <div className="flex gap-0 mt-3 overflow-x-auto">
           {TABS.map((t) => (
@@ -540,7 +574,7 @@ export default function App() {
                         key={t}
                         team={t}
                         result={
-                          TEAM_RESULTS.day1[t] === "won"
+                          teamResults.day1[t] === "won"
                             ? "won"
                             : "lost"
                         }
@@ -575,7 +609,7 @@ export default function App() {
                 GAME STATUS
               </h3>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-1.5">
-                {Object.entries(SCORES.day2 || {}).map(([t, s]) => {
+                {Object.entries(scores.day2 || {}).map(([t, s]) => {
                   const r = getD2Result(t);
                   return (
                     <div
