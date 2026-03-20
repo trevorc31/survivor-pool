@@ -1,0 +1,38 @@
+{
+  "teamResults": {
+    "day1": {
+      "Vanderbilt": "won", "Michigan St": "won", "St. Louis": "won", "Nebraska": "won",
+      "Illinois": "won", "Arkansas": "won", "Louisville": "won", "Gonzaga": "won",
+      "Duke": "won", "Houston": "won", "Texas A&M": "won", "VCU": "won",
+      "Michigan State": "won", "Wisconsin": "lost", "North Carolina": "lost",
+      "BYU": "lost", "Ohio State": "lost", "Saint Mary's": "lost", "Georgia": "lost"
+    },
+    "day2": {
+      "Santa Clara": "lost", "Kentucky": "won", "Texas Tech": "won", "Virginia": "won",
+      "Iowa State": "in_progress", "Alabama": "in_progress", "Utah State": "in_progress",
+      "Tennessee": "in_progress", "Miami (OH)": "in_progress",
+      "Iowa": "scheduled", "St. John's": "scheduled", "UCLA": "scheduled",
+      "Purdue": "scheduled", "Florida": "scheduled", "Kansas": "scheduled",
+      "UConn": "scheduled", "Miami (FL)": "scheduled"
+    }
+  },
+  "scores": {
+    "day2": {
+      "Santa Clara": "84-89 vs Kentucky (OT)", "Kentucky": "89-84 vs Santa Clara (OT)",
+      "Texas Tech": "91-71 vs Akron", "Virginia": "82-73 vs Wright State",
+      "Iowa State": "79-43 vs Tenn. St (2H)", "Alabama": "49-39 vs Hofstra (2H)",
+      "Utah State": "26-20 vs Villanova (1H)", "Tennessee": "10-13 vs Miami OH (1H)",
+      "Miami (OH)": "13-10 vs Tennessee (1H)",
+      "Iowa": "6:50 PM vs Clemson", "St. John's": "7:10 PM vs N. Iowa",
+      "UCLA": "7:25 PM vs UCF", "Purdue": "7:35 PM vs Queens",
+      "Florida": "9:25 PM vs Prairie View", "Kansas": "9:45 PM vs Cal Baptist",
+      "UConn": "10:00 PM vs Furman", "Miami (FL)": "10:10 PM vs Missouri"
+    }
+  },
+  "days": [
+    { "id": "day1", "label": "Day 1", "date": "Thu 3/19", "dayOfWeek": "thursday", "advPicks": 2, "bbPicks": null },
+    { "id": "day2", "label": "Day 2", "date": "Fri 3/20", "dayOfWeek": "friday", "advPicks": 2, "bbPicks": 4 },
+    { "id": "day3", "label": "Day 3", "date": "Sat 3/21", "dayOfWeek": "saturday", "advPicks": 1, "bbPicks": 4 },
+    { "id": "day4", "label": "Day 4", "date": "Sun 3/22", "dayOfWeek": "sunday", "advPicks": 1, "bbPicks": 4 }
+  ]
+}
