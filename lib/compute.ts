@@ -191,6 +191,44 @@ export const WP: Record<string, number> = {
   "High Point": 0.22,
 };
 
+// Predict how many opponents will pick each team today
+export function predictPicks(
+  opponents: PlayerComputed[],
+  dayTeams: string[],
+  numPicksFn: (p: PlayerComputed) => number
+): Record<string, number> {
+  const estPicks: Record<string, number> = {};
+  for (const t of dayTeams) estPicks[t] = 0;
+
+  for (const p of opponents) {
+    const available = dayTeams.filter((t) => !p.usedTeams.has(t));
+    if (available.length === 0) continue;
+
+    const nPicks = numPicksFn(p);
+    if (nPicks <= 0) continue;
+
+    // Raw attraction: WP² × expendability
+    const scores: Record<string, number> = {};
+    let total = 0;
+    for (const t of available) {
+      const wp = WP[t] ?? 0.5;
+      const dr = FUT[t]?.dr ?? 0.3;
+      const raw = wp * wp * (1 - dr * 0.4);
+      scores[t] = raw;
+      total += raw;
+    }
+
+    if (total === 0) continue;
+
+    // Normalize and accumulate
+    for (const t of available) {
+      estPicks[t] += (scores[t] / total) * nPicks;
+    }
+  }
+
+  return estPicks;
+}
+
 // Enhanced edge scoring with 5 components
 export interface EdgeScoreInput {
   impliedWinProb: number | null;

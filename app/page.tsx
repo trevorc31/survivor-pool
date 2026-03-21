@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   computePlayer,
   computeEdgeScore,
+  predictPicks,
   FUT,
   WP,
   MAX_BB,
@@ -287,28 +288,38 @@ export default function App() {
 
   const edge = useMemo(() => {
     if (!isPersonal || !trevor) return [];
+
+    // Historical usage (for reference)
     const ou: Record<string, number> = {};
-    active.forEach((p) => {
-      if (p.me) return;
+    const opponents = active.filter((p) => !p.me);
+    opponents.forEach((p) => {
       p.usedTeams.forEach((t) => {
         ou[t] = (ou[t] || 0) + 1;
       });
     });
-    // Count how many active players picked each team for the NEXT day
-    const nextDayPicks: Record<string, number> = {};
-    active.forEach((p) => {
-      if (p.me) return;
-      const nextEntry = p.history.find(
-        (e) => e.dayId === (trevor.nextIsBuyBack ? trevor.history[trevor.history.length - 1]?.dayId : undefined)
-      );
-      // Also count current day picks for uniqueness
-    });
-    const tot = active.length - 1;
+
+    // Predicted picks for each schedule day
+    const allEstPicks: Record<string, number> = {};
+    const allDayTeams = new Set<string>();
+    for (const day of SCHEDULE_DAYS) {
+      const dayTeams = day.games.flatMap((g) => g.teams);
+      dayTeams.forEach((t) => allDayTeams.add(t));
+      const ep = predictPicks(opponents, dayTeams, (p) => p.nextPicksNeeded || 1);
+      for (const [t, v] of Object.entries(ep)) {
+        allEstPicks[t] = v;
+      }
+    }
+
+    const tot = opponents.length;
     return Object.keys(FUT)
       .filter((t) => !trevor.usedTeams.has(t))
       .map((t) => {
         const f = FUT[t] || { dr: 0.3, t: 4, o: "N/A" };
-        const u = 1 - (ou[t] || 0) / tot;
+        const ep = allEstPicks[t] ?? 0;
+        // Predicted uniqueness for teams playing today; historical for others
+        const u = allDayTeams.has(t)
+          ? 1 - Math.min(ep / tot, 1)
+          : 1 - (ou[t] || 0) / tot;
         const oddsTeam = oddsData?.teams?.[t];
 
         const { score, components } = computeEdgeScore(t, {
@@ -333,6 +344,7 @@ export default function App() {
           wp,
           dr: f.dr,
           on: ou[t] || 0,
+          estPicks: ep,
           u,
           sc: score,
           tier: f.t || 4,
@@ -1316,8 +1328,8 @@ export default function App() {
                           const pool = dayEdge;
                           const burnable = pool.filter((t) => t.tier >= 4 && t.wp >= 0.6);
                           const risky = pool.filter((t) => t.wp < 0.5 && t.wp > 0);
-                          const unique = pool.filter((t) => t.u >= 0.85 && t.wp >= 0.6);
-                          const chalky = pool.filter((t) => t.u < 0.4);
+                          const contrarian = pool.filter((t) => t.wp >= 0.6 && t.estPicks < 2).sort((a, b) => a.estPicks - b.estPicks);
+                          const chalky = pool.filter((t) => t.estPicks >= 4).sort((a, b) => b.estPicks - a.estPicks);
                           return (
                             <>
                               {burnable.length > 0 && (
@@ -1327,17 +1339,17 @@ export default function App() {
                                   Short futures, safe to use now.
                                 </p>
                               )}
-                              {unique.length > 0 && (
+                              {contrarian.length > 0 && (
                                 <p className="m-0 mb-1.5">
-                                  <span className="text-emerald-400">Unique edges:</span>{" "}
-                                  {unique.map((t) => `${t.team} (${t.on === 0 ? "unused" : `${t.on} used`})`).join(", ")}.
-                                  Few others have burned these — picking them differentiates you.
+                                  <span className="text-emerald-400">Contrarian plays:</span>{" "}
+                                  {contrarian.map((t) => `${t.team} (~${t.estPicks.toFixed(1)} est picks)`).join(", ")}.
+                                  Strong teams few others are expected to pick — high differentiation value.
                                 </p>
                               )}
                               {chalky.length > 0 && (
                                 <p className="m-0 mb-1.5">
                                   <span className="text-amber-400">Chalk alert:</span>{" "}
-                                  {chalky.map((t) => `${t.team} (${t.on} used)`).join(", ")}.
+                                  {chalky.map((t) => `${t.team} (~${t.estPicks.toFixed(1)} est picks)`).join(", ")}.
                                   Heavily picked — a loss here eliminates many opponents.
                                 </p>
                               )}
@@ -1372,12 +1384,13 @@ export default function App() {
                         RANKED TEAMS ({dayEdge.length})
                       </h3>
                       <div className="overflow-x-auto">
-                        <div className="grid grid-cols-[24px_1fr_44px_44px_44px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1 text-[9px] text-slate-600 font-bold min-w-[600px]">
+                        <div className="grid grid-cols-[24px_1fr_44px_44px_44px_38px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1 text-[9px] text-slate-600 font-bold min-w-[600px]">
                           <span>#</span>
                           <span>TEAM</span>
                           <span>WIN%</span>
                           <span>SPRD</span>
                           <span>DEPTH</span>
+                          <span>EST</span>
                           <span>UNIQ</span>
                           <span>SHRP%</span>
                           <span>SYS</span>
@@ -1389,7 +1402,7 @@ export default function App() {
                         {dayEdge.map((t, i) => (
                           <div
                             key={t.team}
-                            className="grid grid-cols-[24px_1fr_44px_44px_44px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1.5 rounded text-[11px] items-center min-w-[600px]"
+                            className="grid grid-cols-[24px_1fr_44px_44px_44px_38px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1.5 rounded text-[11px] items-center min-w-[600px]"
                             style={{
                               background:
                                 dayRecs.some((r) => r.team === t.team)
@@ -1460,6 +1473,18 @@ export default function App() {
                                 : t.dr >= 0.4
                                   ? "MED"
                                   : "SHORT"}
+                            </span>
+                            <span
+                              style={{
+                                color:
+                                  t.estPicks >= 5
+                                    ? "#f87171"
+                                    : t.estPicks >= 2
+                                      ? "#fbbf24"
+                                      : "#4ade80",
+                              }}
+                            >
+                              {t.estPicks.toFixed(1)}
                             </span>
                             <span
                               style={{
