@@ -25,6 +25,31 @@ const INITIAL_TEAM_RESULTS: Record<string, Record<string, string>> =
 const INITIAL_SCORES: Record<string, Record<string, string>> = resultsData.scores;
 const DAYS: DayConfig[] = resultsData.days as DayConfig[];
 
+// Schedule data — used by both Schedule tab and Edge Lab
+const SCHEDULE_DAYS = [
+  {
+    dayId: "day3",
+    label: "SAT 3/21 — Round of 32",
+    sub: "Advancing: 1 pick · Buy-back: 4 picks",
+    games: [
+      { t: "12:10 PM", m: "(1) Michigan vs (9) Saint Louis", teams: ["Michigan", "Saint Louis"] },
+      { t: "2:45 PM", m: "(4) Michigan State vs (5) Louisville", teams: ["Michigan State", "Louisville"] },
+      { t: "5:15 PM", m: "(1) Duke vs (8) TCU", teams: ["Duke", "TCU"] },
+      { t: "6:10 PM", m: "(1) Houston vs (5) Texas A&M", teams: ["Houston", "Texas A&M"] },
+      { t: "7:10 PM", m: "(3) Gonzaga vs (6) Texas", teams: ["Gonzaga"] },
+      { t: "7:50 PM", m: "(3) Illinois vs (6) VCU", teams: ["Illinois", "VCU"] },
+      { t: "8:45 PM", m: "(4) Nebraska vs (5) Vanderbilt", teams: ["Nebraska", "Vanderbilt"] },
+      { t: "9:45 PM", m: "(3) Arkansas vs (14) High Point", teams: ["Arkansas", "High Point"] },
+    ],
+  },
+  {
+    dayId: "day4",
+    label: "SUN 3/22 — Round of 32",
+    sub: "Advancing: 1 pick · Buy-back: 4 picks · ⚠ LAST BUY-BACK DAY",
+    games: [], // TBD — populated after Friday evening games finish
+  },
+];
+
 // ── UI Atoms ──
 
 function Badge({ type }: { type: string }) {
@@ -247,6 +272,15 @@ export default function App() {
         ou[t] = (ou[t] || 0) + 1;
       });
     });
+    // Count how many active players picked each team for the NEXT day
+    const nextDayPicks: Record<string, number> = {};
+    active.forEach((p) => {
+      if (p.me) return;
+      const nextEntry = p.history.find(
+        (e) => e.dayId === (trevor.nextIsBuyBack ? trevor.history[trevor.history.length - 1]?.dayId : undefined)
+      );
+      // Also count current day picks for uniqueness
+    });
     const tot = active.length - 1;
     return Object.keys(FUT)
       .filter((t) => !trevor.usedTeams.has(t))
@@ -283,6 +317,7 @@ export default function App() {
           odds: f.o || "N/A",
           moneyline: oddsTeam?.moneyline ?? null,
           spread: oddsTeam?.spread ?? null,
+          opponent: oddsTeam?.opponent ?? null,
           sharpMoney: oddsTeam?.sharp?.sharpMoney ?? null,
           systems: oddsTeam?.sharp?.systems ?? null,
           signal,
@@ -292,6 +327,39 @@ export default function App() {
       })
       .sort((a, b) => b.sc - a.sc);
   }, [isPersonal, trevor, active, oddsData]);
+
+  // Per-day edge: filter edge list to teams playing each schedule day
+  const edgeByDay = useMemo(() => {
+    const result: Record<string, typeof edge> = {};
+    for (const day of SCHEDULE_DAYS) {
+      const dayTeams = new Set(day.games.flatMap((g) => g.teams));
+      result[day.dayId] = edge.filter((t) => dayTeams.has(t.team));
+    }
+    return result;
+  }, [edge]);
+
+  // Recommended picks per day
+  const recommendedByDay = useMemo(() => {
+    if (!trevor) return {} as Record<string, typeof edge>;
+    const result: Record<string, typeof edge> = {};
+    for (const day of SCHEDULE_DAYS) {
+      const pool = edgeByDay[day.dayId] || [];
+      if (pool.length === 0) continue;
+      const isFirstDay = day === SCHEDULE_DAYS[0];
+      const n = isFirstDay ? (trevor.nextPicksNeeded || 1) : 1;
+
+      const useNow = pool.filter((t) => t.tier >= 4 && t.wp >= 0.5).sort((a, b) => b.sc - a.sc);
+      const flex = pool.filter((t) => t.tier === 3 && t.wp >= 0.5).sort((a, b) => b.sc - a.sc);
+      const save = pool.filter((t) => t.tier <= 2).sort((a, b) => b.sc - a.sc);
+
+      const picks: typeof pool = [];
+      for (const t of useNow) { if (picks.length >= n) break; picks.push(t); }
+      for (const t of flex) { if (picks.length >= n) break; picks.push(t); }
+      for (const t of save) { if (picks.length >= n) break; picks.push(t); }
+      result[day.dayId] = picks;
+    }
+    return result;
+  }, [trevor, edgeByDay]);
 
   // ── Password Prompt ──
   if (mode === "pw_prompt") {
@@ -989,7 +1057,7 @@ export default function App() {
           <div>
             <div className="flex items-center justify-between mb-0.5">
               <h2 className="text-[15px] text-slate-50">
-                Edge Lab &mdash; Trevor&apos;s Strategy
+                Edge Lab
               </h2>
               <button
                 onClick={fetchOdds}
@@ -999,12 +1067,8 @@ export default function App() {
                 {oddsLoading ? "Loading..." : "Refresh Odds"}
               </button>
             </div>
-            <p className="text-[11px] text-slate-500 mb-1">
-              Score = 25% win prob + 20% futures + 25% uniqueness + 20%
-              sharp + 10% line value
-            </p>
             {/* Status bar */}
-            <div className="flex items-center gap-3 text-[9px] text-slate-600 mb-3.5">
+            <div className="flex items-center gap-3 text-[9px] text-slate-600 mb-3">
               {oddsData && (
                 <>
                   <span className="flex items-center gap-1">
@@ -1034,229 +1098,348 @@ export default function App() {
                       Credits: {oddsData.creditsRemaining}
                     </span>
                   )}
-                  {oddsData.sharpLastUpdated && (
-                    <span>
-                      Sharp: {new Date(oddsData.sharpLastUpdated).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })} ET
-                    </span>
-                  )}
                 </>
               )}
               {!oddsData && (
                 <span>Click &quot;Refresh Odds&quot; to load live data</span>
               )}
             </div>
-            <div className={cardClass}>
-              <h3 className="m-0 mb-1.5 text-[10px] text-slate-600">
-                TEAMS ALREADY BURNED ({trevor.usedTeams.size})
-              </h3>
-              <div className="flex flex-wrap gap-1.5">
-                {[...trevor.usedTeams].map((t) => (
-                  <Pill key={t} team={t} dim />
-                ))}
-              </div>
-            </div>
-            {/* Dynamic strategy summary */}
+
+            {/* Your situation */}
             <div
               className="rounded-lg p-3.5 mb-3"
-              style={{
-                background: "#140a24",
-                border: "1px solid #7c3aed",
-              }}
+              style={{ background: "#0a1420", border: "1px solid #1e3a5f" }}
             >
-              <h3 className="m-0 mb-1.5 text-[11px] text-violet-400">
-                STRATEGY SUMMARY
+              <h3 className="m-0 mb-1.5 text-[11px] text-blue-400">
+                YOUR SITUATION
               </h3>
-              <div className="text-[11px] text-slate-300 leading-7">
+              <div className="text-[11px] text-slate-300 leading-6">
                 <p className="m-0 mb-1">
-                  <span className="text-green-400">USE NOW:</span>{" "}
-                  {edge
-                    .filter((t) => t.tier >= 4)
-                    .map((t) => t.team)
-                    .join(", ") || "None"}
+                  You need{" "}
+                  <strong className="text-amber-400">
+                    {trevor.nextPicksNeeded} pick{trevor.nextPicksNeeded !== 1 ? "s" : ""}
+                  </strong>{" "}
+                  for {SCHEDULE_DAYS[0]?.label?.split(" — ")[0] || "next day"}
+                  {trevor.nextIsBuyBack && (
+                    <span className="text-red-400"> (buy-back #{trevor.totalBB + 1}/{MAX_BB}, +${BB_COST})</span>
+                  )}
                 </p>
                 <p className="m-0 mb-1">
-                  <span className="text-red-500">SAVE:</span>{" "}
-                  {edge
-                    .filter((t) => t.tier <= 2)
-                    .map((t) => t.team)
-                    .join(", ") || "None"}
+                  Teams burned ({trevor.usedTeams.size}): {" "}
+                  <span className="text-slate-500">{[...trevor.usedTeams].join(", ")}</span>
                 </p>
-                <p className="m-0 mb-1">
-                  <span className="text-blue-400">FLEX:</span>{" "}
-                  {edge
-                    .filter((t) => t.tier === 3)
-                    .map((t) => t.team)
-                    .join(", ") || "None"}
-                </p>
-                {edge.some((t) => t.signal === "bull") && (
-                  <p className="m-0 mb-1">
-                    <span className="text-emerald-400">SHARP FAVORITES:</span>{" "}
-                    {edge
-                      .filter((t) => t.signal === "bull")
-                      .map((t) => t.team)
-                      .join(", ")}
-                  </p>
-                )}
-                {edge.some((t) => t.signal === "bear") && (
-                  <p className="m-0">
-                    <span className="text-red-400">SHARP FADES:</span>{" "}
-                    {edge
-                      .filter((t) => t.signal === "bear")
-                      .map((t) => t.team)
-                      .join(", ")}
-                  </p>
-                )}
               </div>
             </div>
-            <div className={cardClass}>
-              <h3 className="m-0 mb-2 text-[10px] text-slate-600">
-                AVAILABLE TEAMS RANKED
-              </h3>
-              <div className="overflow-x-auto">
-                <div className="grid grid-cols-[24px_1fr_44px_44px_44px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1 text-[9px] text-slate-600 font-bold min-w-[600px]">
-                  <span>#</span>
-                  <span>TEAM</span>
-                  <span>WIN%</span>
-                  <span>SPRD</span>
-                  <span>DEPTH</span>
-                  <span>UNIQ</span>
-                  <span>SHRP%</span>
-                  <span>SYS</span>
-                  <span>SCORE</span>
-                  <span>TIER</span>
-                  <span>ODDS</span>
-                  <span></span>
-                </div>
-                {edge.map((t, i) => (
+
+            {/* ── Per-day sections ── */}
+            {SCHEDULE_DAYS.map((day) => {
+              const dayEdge = edgeByDay[day.dayId] || [];
+              const dayRecs = recommendedByDay[day.dayId] || [];
+              const isFirstDay = day === SCHEDULE_DAYS[0];
+              if (dayEdge.length === 0 && day.games.length === 0) return null;
+
+              return (
+                <div key={day.dayId} className="mb-6">
+                  {/* Day header */}
                   <div
-                    key={t.team}
-                    className="grid grid-cols-[24px_1fr_44px_44px_44px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1.5 rounded text-[11px] items-center min-w-[600px]"
-                    style={{
-                      background:
-                        i < 3
-                          ? "#0a1a0a"
-                          : i < 8
-                            ? "#0a0f1a"
-                            : "#080c14",
-                      border:
-                        i < 3
-                          ? "1px solid #166534"
-                          : "1px solid transparent",
-                    }}
+                    className="rounded-lg p-3 mb-3"
+                    style={{ background: "#0c1222", border: "1px solid #334155" }}
                   >
-                    <span
-                      className="font-bold"
-                      style={{
-                        color: i < 3 ? "#4ade80" : "#475569",
-                      }}
-                    >
-                      {i + 1}
-                    </span>
-                    <span className="font-semibold text-slate-200 flex items-center gap-1">
-                      {t.team}
-                      {t.liveOdds && (
-                        <span className="inline-block w-1 h-1 rounded-full bg-green-500" title="Live odds" />
-                      )}
-                    </span>
-                    <span
-                      style={{
-                        color:
-                          t.wp >= 0.8
-                            ? "#4ade80"
-                            : t.wp >= 0.5
-                              ? "#fbbf24"
-                              : "#f87171",
-                      }}
-                    >
-                      {(t.wp * 100).toFixed(0)}%
-                    </span>
-                    <span
-                      className="text-[10px]"
-                      style={{
-                        color: t.spread !== null
-                          ? (t.spread <= -10 ? "#4ade80" : t.spread <= -3 ? "#fbbf24" : "#f87171")
-                          : "#334155",
-                      }}
-                    >
-                      {t.spread !== null ? (t.spread > 0 ? `+${t.spread}` : t.spread) : "-"}
-                    </span>
-                    <span
-                      className="text-[10px]"
-                      style={{
-                        color:
-                          t.dr >= 0.7
-                            ? "#f87171"
-                            : t.dr >= 0.4
-                              ? "#fbbf24"
-                              : "#4ade80",
-                      }}
-                    >
-                      {t.dr >= 0.7
-                        ? "DEEP"
-                        : t.dr >= 0.4
-                          ? "MED"
-                          : "SHORT"}
-                    </span>
-                    <span
-                      style={{
-                        color:
-                          t.u >= 0.8
-                            ? "#4ade80"
-                            : t.u >= 0.5
-                              ? "#fbbf24"
-                              : "#f87171",
-                      }}
-                    >
-                      {(t.u * 100).toFixed(0)}%
-                    </span>
-                    <span
-                      style={{
-                        color: t.sharpMoney !== null
-                          ? (t.sharpMoney >= 65 ? "#4ade80" : t.sharpMoney >= 50 ? "#fbbf24" : "#f87171")
-                          : "#334155",
-                      }}
-                    >
-                      {t.sharpMoney !== null ? `${t.sharpMoney}%` : "-"}
-                    </span>
-                    <span
-                      style={{
-                        color: t.systems !== null
-                          ? (t.systems >= 3 ? "#4ade80" : t.systems >= 1 ? "#fbbf24" : "#f87171")
-                          : "#334155",
-                      }}
-                    >
-                      {t.systems !== null ? t.systems : "-"}
-                    </span>
-                    <span
-                      className="font-extrabold"
-                      style={{
-                        color:
-                          t.sc >= 0.7
-                            ? "#4ade80"
-                            : t.sc >= 0.5
-                              ? "#fbbf24"
-                              : "#94a3b8",
-                      }}
-                    >
-                      {(t.sc * 100).toFixed(0)}
-                    </span>
-                    <TBadge tier={t.tier} />
-                    <span className="text-[9px] text-slate-600">
-                      {t.odds}
-                    </span>
-                    <span
-                      className="text-[12px] text-center"
-                      style={{
-                        color: t.signal === "bull" ? "#4ade80" : t.signal === "bear" ? "#f87171" : "#475569",
-                      }}
-                      title={t.signal === "bull" ? "Sharp + high WP" : t.signal === "bear" ? "Fade signal" : "Neutral"}
-                    >
-                      {t.signal === "bull" ? "\u25b2" : t.signal === "bear" ? "\u25bc" : "\u2013"}
-                    </span>
+                    <h3 className="m-0 text-[13px] text-slate-100 font-bold">{day.label}</h3>
+                    <p className="m-0 text-[10px] text-slate-500 mt-0.5">{day.sub}</p>
+                    {day.games.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-500">
+                        {day.games.map((g, gi) => (
+                          <span key={gi}>{g.t} &mdash; {g.m}</span>
+                        ))}
+                      </div>
+                    )}
+                    {day.games.length === 0 && (
+                      <p className="m-0 mt-1 text-[10px] text-slate-600">Games TBD</p>
+                    )}
                   </div>
-                ))}
-              </div>
-            </div>
+
+                  {/* Recommended picks for this day */}
+                  {dayRecs.length > 0 && (
+                    <div
+                      className="rounded-lg p-3.5 mb-3"
+                      style={{ background: "#0a1a0a", border: "1px solid #166534" }}
+                    >
+                      <h3 className="m-0 mb-2 text-[11px] text-green-400">
+                        RECOMMENDED PICKS {isFirstDay && trevor.nextPicksNeeded > 1 ? `(${trevor.nextPicksNeeded} needed)` : ""}
+                      </h3>
+                      <div className="flex flex-col gap-2.5">
+                        {dayRecs.map((t, i) => (
+                          <div key={t.team}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-green-400 font-bold text-[13px]">{i + 1}.</span>
+                              <span className="text-slate-100 font-bold text-[13px]">{t.team}</span>
+                              {t.opponent && (
+                                <span className="text-slate-500 text-[11px]">vs {t.opponent}</span>
+                              )}
+                              <span
+                                className="text-[10px] ml-auto font-bold"
+                                style={{ color: t.wp >= 0.8 ? "#4ade80" : t.wp >= 0.5 ? "#fbbf24" : "#f87171" }}
+                              >
+                                {(t.wp * 100).toFixed(0)}% WP
+                              </span>
+                              {t.spread !== null && (
+                                <span className="text-[10px] text-slate-400">({t.spread > 0 ? `+${t.spread}` : t.spread})</span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-400 pl-5 leading-5">
+                              {t.tier >= 4 && (
+                                <span className="text-green-500">Expendable (short tournament run). </span>
+                              )}
+                              {t.tier <= 2 && (
+                                <span className="text-red-400">Warning: deep-run team, burning early. </span>
+                              )}
+                              {t.tier === 3 && (
+                                <span className="text-blue-400">Flex pick (moderate depth). </span>
+                              )}
+                              {t.u >= 0.85 && (
+                                <span className="text-emerald-400">Unique pick ({t.on === 0 ? "no one" : `only ${t.on}`} used). </span>
+                              )}
+                              {t.u < 0.5 && (
+                                <span className="text-amber-400">Heavily used by pool ({t.on} others). </span>
+                              )}
+                              {t.signal === "bull" && (
+                                <span className="text-emerald-400">Sharp money agrees. </span>
+                              )}
+                              {t.signal === "bear" && (
+                                <span className="text-red-400">Sharp money fading this pick. </span>
+                              )}
+                              Score: {(t.sc * 100).toFixed(0)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Insights for this day */}
+                  {dayEdge.length > 0 && (
+                    <div
+                      className="rounded-lg p-3.5 mb-3"
+                      style={{ background: "#140a24", border: "1px solid #7c3aed" }}
+                    >
+                      <h3 className="m-0 mb-1.5 text-[11px] text-violet-400">
+                        INSIGHTS
+                      </h3>
+                      <div className="text-[11px] text-slate-300 leading-6">
+                        {(() => {
+                          const pool = dayEdge;
+                          const burnable = pool.filter((t) => t.tier >= 4 && t.wp >= 0.6);
+                          const risky = pool.filter((t) => t.wp < 0.5 && t.wp > 0);
+                          const unique = pool.filter((t) => t.u >= 0.85 && t.wp >= 0.6);
+                          const chalky = pool.filter((t) => t.u < 0.4);
+                          return (
+                            <>
+                              {burnable.length > 0 && (
+                                <p className="m-0 mb-1.5">
+                                  <span className="text-green-400">Burn candidates:</span>{" "}
+                                  {burnable.map((t) => `${t.team} (${(t.wp * 100).toFixed(0)}%)`).join(", ")}.
+                                  Short futures, safe to use now.
+                                </p>
+                              )}
+                              {unique.length > 0 && (
+                                <p className="m-0 mb-1.5">
+                                  <span className="text-emerald-400">Unique edges:</span>{" "}
+                                  {unique.map((t) => `${t.team} (${t.on === 0 ? "unused" : `${t.on} used`})`).join(", ")}.
+                                  Few others have burned these — picking them differentiates you.
+                                </p>
+                              )}
+                              {chalky.length > 0 && (
+                                <p className="m-0 mb-1.5">
+                                  <span className="text-amber-400">Chalk alert:</span>{" "}
+                                  {chalky.map((t) => `${t.team} (${t.on} used)`).join(", ")}.
+                                  Heavily picked — a loss here eliminates many opponents.
+                                </p>
+                              )}
+                              {risky.length > 0 && (
+                                <p className="m-0 mb-1.5">
+                                  <span className="text-red-400">Upset risks:</span>{" "}
+                                  {risky.map((t) => `${t.team} (${(t.wp * 100).toFixed(0)}%)`).join(", ")}.
+                                  Win probability under 50%.
+                                </p>
+                              )}
+                              {isFirstDay && trevor.nextIsBuyBack && trevor.nextPicksNeeded >= 4 && (
+                                <p className="m-0 mb-1.5">
+                                  <span className="text-amber-400">Buy-back strategy:</span>{" "}
+                                  With {trevor.nextPicksNeeded} picks needed, prioritize expendable teams.
+                                  Save deep-run teams for later rounds when you only need 1 pick/day.
+                                </p>
+                              )}
+                              <p className="m-0 text-slate-500 text-[10px]">
+                                Score = 25% win prob + 20% futures + 25% uniqueness + 20% sharp + 10% line value
+                              </p>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ranked teams table for this day */}
+                  {dayEdge.length > 0 && (
+                    <div className={cardClass}>
+                      <h3 className="m-0 mb-2 text-[10px] text-slate-600">
+                        RANKED TEAMS ({dayEdge.length})
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <div className="grid grid-cols-[24px_1fr_44px_44px_44px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1 text-[9px] text-slate-600 font-bold min-w-[600px]">
+                          <span>#</span>
+                          <span>TEAM</span>
+                          <span>WIN%</span>
+                          <span>SPRD</span>
+                          <span>DEPTH</span>
+                          <span>UNIQ</span>
+                          <span>SHRP%</span>
+                          <span>SYS</span>
+                          <span>SCORE</span>
+                          <span>TIER</span>
+                          <span>ODDS</span>
+                          <span></span>
+                        </div>
+                        {dayEdge.map((t, i) => (
+                          <div
+                            key={t.team}
+                            className="grid grid-cols-[24px_1fr_44px_44px_44px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1.5 rounded text-[11px] items-center min-w-[600px]"
+                            style={{
+                              background:
+                                dayRecs.some((r) => r.team === t.team)
+                                  ? "#0a1a0a"
+                                  : i < 8
+                                    ? "#0a0f1a"
+                                    : "#080c14",
+                              border:
+                                dayRecs.some((r) => r.team === t.team)
+                                  ? "1px solid #166534"
+                                  : "1px solid transparent",
+                            }}
+                          >
+                            <span
+                              className="font-bold"
+                              style={{
+                                color: dayRecs.some((r) => r.team === t.team) ? "#4ade80" : "#475569",
+                              }}
+                            >
+                              {i + 1}
+                            </span>
+                            <span className="font-semibold text-slate-200">
+                              <span className="flex items-center gap-1">
+                                {t.team}
+                                {t.liveOdds && (
+                                  <span className="inline-block w-1 h-1 rounded-full bg-green-500" title="Live odds" />
+                                )}
+                              </span>
+                              {t.opponent && (
+                                <span className="text-[9px] text-slate-600 font-normal block leading-tight">vs {t.opponent}</span>
+                              )}
+                            </span>
+                            <span
+                              style={{
+                                color:
+                                  t.wp >= 0.8
+                                    ? "#4ade80"
+                                    : t.wp >= 0.5
+                                      ? "#fbbf24"
+                                      : "#f87171",
+                              }}
+                            >
+                              {(t.wp * 100).toFixed(0)}%
+                            </span>
+                            <span
+                              className="text-[10px]"
+                              style={{
+                                color: t.spread !== null
+                                  ? (t.spread <= -10 ? "#4ade80" : t.spread <= -3 ? "#fbbf24" : "#f87171")
+                                  : "#334155",
+                              }}
+                            >
+                              {t.spread !== null ? (t.spread > 0 ? `+${t.spread}` : t.spread) : "-"}
+                            </span>
+                            <span
+                              className="text-[10px]"
+                              style={{
+                                color:
+                                  t.dr >= 0.7
+                                    ? "#f87171"
+                                    : t.dr >= 0.4
+                                      ? "#fbbf24"
+                                      : "#4ade80",
+                              }}
+                            >
+                              {t.dr >= 0.7
+                                ? "DEEP"
+                                : t.dr >= 0.4
+                                  ? "MED"
+                                  : "SHORT"}
+                            </span>
+                            <span
+                              style={{
+                                color:
+                                  t.u >= 0.8
+                                    ? "#4ade80"
+                                    : t.u >= 0.5
+                                      ? "#fbbf24"
+                                      : "#f87171",
+                              }}
+                            >
+                              {(t.u * 100).toFixed(0)}%
+                            </span>
+                            <span
+                              style={{
+                                color: t.sharpMoney !== null
+                                  ? (t.sharpMoney >= 65 ? "#4ade80" : t.sharpMoney >= 50 ? "#fbbf24" : "#f87171")
+                                  : "#334155",
+                              }}
+                            >
+                              {t.sharpMoney !== null ? `${t.sharpMoney}%` : "-"}
+                            </span>
+                            <span
+                              style={{
+                                color: t.systems !== null
+                                  ? (t.systems >= 3 ? "#4ade80" : t.systems >= 1 ? "#fbbf24" : "#f87171")
+                                  : "#334155",
+                              }}
+                            >
+                              {t.systems !== null ? t.systems : "-"}
+                            </span>
+                            <span
+                              className="font-extrabold"
+                              style={{
+                                color:
+                                  t.sc >= 0.7
+                                    ? "#4ade80"
+                                    : t.sc >= 0.5
+                                      ? "#fbbf24"
+                                      : "#94a3b8",
+                              }}
+                            >
+                              {(t.sc * 100).toFixed(0)}
+                            </span>
+                            <TBadge tier={t.tier} />
+                            <span className="text-[9px] text-slate-600">
+                              {t.odds}
+                            </span>
+                            <span
+                              className="text-[12px] text-center"
+                              style={{
+                                color: t.signal === "bull" ? "#4ade80" : t.signal === "bear" ? "#f87171" : "#475569",
+                              }}
+                              title={t.signal === "bull" ? "Sharp + high WP" : t.signal === "bear" ? "Fade signal" : "Neutral"}
+                            >
+                              {t.signal === "bull" ? "\u25b2" : t.signal === "bear" ? "\u25bc" : "\u2013"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 

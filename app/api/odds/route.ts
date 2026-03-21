@@ -133,9 +133,12 @@ export async function GET() {
           const h2h = getConsensusOdds(event.bookmakers, "h2h", rawName);
           const spread = getConsensusOdds(event.bookmakers, "spreads", rawName);
 
+          // Strip mascot from non-app opponent names (e.g. "Clemson Tigers" -> "Clemson")
+          const oppDisplay = oppApp || oppRaw.replace(/\s+[A-Z][a-z]+$/, "") || oppRaw;
+
           teams[appName] = {
             team: appName,
-            opponent: oppApp || oppRaw,
+            opponent: oppDisplay,
             moneyline: h2h?.price ?? null,
             spread: spread?.point ?? null,
             impliedWinProb: h2h ? americanToImplied(h2h.price) : null,
