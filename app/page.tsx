@@ -1043,32 +1043,6 @@ export default function App() {
             </h2>
             {[
               {
-                label: "FRI 3/20 \u2014 First Round (Complete)",
-                sub: "All games final",
-                games: [
-                  { t: "6:50 PM", m: "(8) Clemson vs (9) Iowa" },
-                  {
-                    t: "7:10 PM",
-                    m: "(5) St. John's vs (12) N. Iowa",
-                  },
-                  { t: "7:25 PM", m: "(7) UCLA vs (10) UCF" },
-                  { t: "7:35 PM", m: "(2) Purdue vs (15) Queens" },
-                  {
-                    t: "9:25 PM",
-                    m: "(1) Florida vs (16) Prairie View",
-                  },
-                  {
-                    t: "9:45 PM",
-                    m: "(4) Kansas vs (13) Cal Baptist",
-                  },
-                  { t: "10:00 PM", m: "(2) UConn vs (15) Furman" },
-                  {
-                    t: "10:10 PM",
-                    m: "(7) Miami FL vs (10) Missouri",
-                  },
-                ],
-              },
-              {
                 label: "SAT 3/21 \u2014 Round of 32",
                 sub: "Advancing: 1 pick \u00b7 Buy-back: 4 picks",
                 games: [
