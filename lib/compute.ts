@@ -130,7 +130,14 @@ export function computePlayer(
     money: BUY_IN + totalBB * BB_COST,
     currentStatus: isPermElim
       ? "out"
-      : dayResults.day2 || dayResults.day1 || "pending",
+      : (() => {
+          // Use the latest day result
+          for (let i = days.length - 1; i >= 0; i--) {
+            const dr = dayResults[days[i].id];
+            if (dr) return dr;
+          }
+          return "pending";
+        })(),
   };
 }
 

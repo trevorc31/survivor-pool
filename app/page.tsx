@@ -46,7 +46,16 @@ const SCHEDULE_DAYS = [
     dayId: "day4",
     label: "SUN 3/22 — Round of 32",
     sub: "Advancing: 1 pick · Buy-back: 4 picks · ⚠ LAST BUY-BACK DAY",
-    games: [], // TBD — populated after Friday evening games finish
+    games: [
+      { t: "12:10 PM", m: "(2) Purdue vs (7) Miami (FL)", teams: ["Purdue", "Miami (FL)"] },
+      { t: "2:45 PM", m: "(2) Iowa State vs (7) Kentucky", teams: ["Iowa State", "Kentucky"] },
+      { t: "5:15 PM", m: "(4) Kansas vs (5) St. John's", teams: ["Kansas", "St. John's"] },
+      { t: "6:10 PM", m: "(3) Virginia vs (6) Tennessee", teams: ["Virginia", "Tennessee"] },
+      { t: "7:10 PM", m: "(1) Florida vs (9) Iowa", teams: ["Florida", "Iowa"] },
+      { t: "7:50 PM", m: "(1) Arizona vs (9) Utah State", teams: ["Utah State"] },
+      { t: "8:45 PM", m: "(2) UConn vs (7) UCLA", teams: ["UConn", "UCLA"] },
+      { t: "9:45 PM", m: "(4) Alabama vs (5) Texas Tech", teams: ["Alabama", "Texas Tech"] },
+    ],
   },
 ];
 
@@ -218,7 +227,8 @@ export default function App() {
     ? [
         "Dashboard",
         "Day 1",
-        "Day 2 (Live)",
+        "Day 2",
+        "Day 3 (Live)",
         "Used Teams",
         "Schedule",
         "Edge Lab",
@@ -227,7 +237,8 @@ export default function App() {
     : [
         "Dashboard",
         "Day 1",
-        "Day 2 (Live)",
+        "Day 2",
+        "Day 3 (Live)",
         "Used Teams",
         "Schedule",
         "Money",
@@ -257,6 +268,17 @@ export default function App() {
     active.forEach((p) => {
       const d2 = p.history.find((e) => e.dayId === "day2");
       d2?.picks.forEach((t) => {
+        f[t] = (f[t] || 0) + 1;
+      });
+    });
+    return Object.entries(f).sort((a, b) => b[1] - a[1]);
+  }, [active]);
+
+  const day3Freq = useMemo(() => {
+    const f: Record<string, number> = {};
+    active.forEach((p) => {
+      const d3 = p.history.find((e) => e.dayId === "day3");
+      d3?.picks.forEach((t) => {
         f[t] = (f[t] || 0) + 1;
       });
     });
@@ -418,6 +440,7 @@ export default function App() {
   }
 
   const getD2Result = (t: string) => teamResults.day2?.[t] || "pending";
+  const getD3Result = (t: string) => teamResults.day3?.[t] || "pending";
 
   return (
     <div className="font-mono bg-[#080c14] text-slate-200 min-h-screen">
@@ -448,8 +471,8 @@ export default function App() {
         </div>
         <p className="mt-0.5 text-[11px] text-slate-600">
           {active.length} alive &middot;{" "}
-          {players.filter((p) => p.isPermElim).length} out &middot; Day 2 Fri
-          3/20 &middot; Pot: ${pot}
+          {players.filter((p) => p.isPermElim).length} out &middot; Day 3 Sat
+          3/21 &middot; Pot: ${pot}
           {lastFetched && (
             <span className="ml-2">
               &middot;{" "}
@@ -505,88 +528,95 @@ export default function App() {
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-400 mb-1.5">
-                  Day 1: St. Louis &#10003;, Wisconsin &#10007; &rarr;
-                  Bought back in Day 2
+                  Day 1: St. Louis &#10003;, Wisconsin &#10007; &rarr; BB#1
+                  &middot; Day 2: Santa Clara &#10007;, Texas Tech &#10003;, Iowa &#10003;, UCLA &#10003; &rarr; Eliminated
                 </div>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {trevor.history
-                    .find((e) => e.dayId === "day2")
-                    ?.picks.map((t) => (
-                      <Pill key={t} team={t} result={getD2Result(t)} />
-                    ))}
-                </div>
-                <div className="text-[11px] text-red-500 font-semibold mb-1">
-                  &#9888; Santa Clara LOST &rarr; Eliminated for Day 2.
-                </div>
-                <div className="text-[11px] text-amber-400">
-                  Saturday: Buy back in (BB 2/{MAX_BB}, +$5) with 4
-                  picks, or done for good.
+                {trevor.nextPicksNeeded > 0 ? (
+                  <div className="text-[11px] text-amber-400 font-semibold">
+                    {trevor.nextIsBuyBack
+                      ? `Today: Buy back in (BB ${trevor.totalBB + 1}/${MAX_BB}, +$${BB_COST}) with ${trevor.nextPicksNeeded} picks`
+                      : `Today: Need ${trevor.nextPicksNeeded} pick${trevor.nextPicksNeeded !== 1 ? "s" : ""}`}
+                  </div>
+                ) : trevor.isPermElim ? (
+                  <div className="text-[11px] text-red-500 font-semibold">
+                    Eliminated &mdash; no more buy-backs available.
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {trevor.history
+                      .find((e) => e.dayId === "day3")
+                      ?.picks.map((t) => (
+                        <Pill key={t} team={t} result={getD3Result(t)} />
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {day3Freq.length > 0 && (
+              <div className={cardClass}>
+                <h3 className="m-0 mb-2 text-[11px] text-slate-500 tracking-wider">
+                  DAY 3 TEAM POPULARITY
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {day3Freq.map(([t, c]) => {
+                    const r = getD3Result(t);
+                    return (
+                      <div
+                        key={t}
+                        className="bg-[#0a0f1a] border border-[#1a2030] rounded px-2.5 py-1 flex items-center gap-1.5"
+                      >
+                        <span
+                          className="text-[13px] font-extrabold"
+                          style={{
+                            color:
+                              c >= 8
+                                ? "#ef4444"
+                                : c >= 4
+                                  ? "#fbbf24"
+                                  : "#4ade80",
+                          }}
+                        >
+                          {c}
+                        </span>
+                        <span className="text-[11px] text-slate-300">
+                          {t}
+                        </span>
+                        <span
+                          className="text-[10px]"
+                          style={{
+                            color:
+                              r === "won"
+                                ? "#4ade80"
+                                : r === "lost"
+                                  ? "#f87171"
+                                  : r === "in_progress"
+                                    ? "#fbbf24"
+                                    : "#475569",
+                          }}
+                        >
+                          {r === "won"
+                            ? "\u2713"
+                            : r === "lost"
+                              ? "\u2717"
+                              : r === "in_progress"
+                                ? "\u25c9"
+                                : "\u00b7"}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             <div className={cardClass}>
               <h3 className="m-0 mb-2 text-[11px] text-slate-500 tracking-wider">
-                DAY 2 TEAM POPULARITY
-              </h3>
-              <div className="flex flex-wrap gap-1.5">
-                {day2Freq.map(([t, c]) => {
-                  const r = getD2Result(t);
-                  return (
-                    <div
-                      key={t}
-                      className="bg-[#0a0f1a] border border-[#1a2030] rounded px-2.5 py-1 flex items-center gap-1.5"
-                    >
-                      <span
-                        className="text-[13px] font-extrabold"
-                        style={{
-                          color:
-                            c >= 8
-                              ? "#ef4444"
-                              : c >= 4
-                                ? "#fbbf24"
-                                : "#4ade80",
-                        }}
-                      >
-                        {c}
-                      </span>
-                      <span className="text-[11px] text-slate-300">
-                        {t}
-                      </span>
-                      <span
-                        className="text-[10px]"
-                        style={{
-                          color:
-                            r === "won"
-                              ? "#4ade80"
-                              : r === "lost"
-                                ? "#f87171"
-                                : r === "in_progress"
-                                  ? "#fbbf24"
-                                  : "#475569",
-                        }}
-                      >
-                        {r === "won"
-                          ? "\u2713"
-                          : r === "lost"
-                            ? "\u2717"
-                            : r === "in_progress"
-                              ? "\u25c9"
-                              : "\u00b7"}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className={cardClass}>
-              <h3 className="m-0 mb-2 text-[11px] text-slate-500 tracking-wider">
-                ALL PARTICIPANTS &mdash; DAY 2
+                ALL PARTICIPANTS &mdash; DAY 3
               </h3>
               <div className="flex flex-col gap-1">
                 {players.map((p, i) => {
-                  const d2 = p.history.find((e) => e.dayId === "day2");
+                  const d3 = p.history.find((e) => e.dayId === "day3");
                   const st = p.currentStatus;
                   return (
                     <div
@@ -610,8 +640,7 @@ export default function App() {
                         {p.n}
                       </span>
                       <Badge type={st} />
-                      {d2?.buyBack && <Badge type="bb" />}
-                      {p.totalBB > 1 && (
+                      {p.totalBB > 0 && (
                         <span className="text-[9px] text-amber-400 bg-[#3b2f08] px-1.5 py-px rounded">
                           BB&times;{p.totalBB}
                         </span>
@@ -621,23 +650,28 @@ export default function App() {
                           &#9888; DUPE: {p.dupes.join(",")}
                         </span>
                       )}
-                      {p.nextPicksNeeded > 0 && (
+                      {p.nextPicksNeeded > 0 && !d3 && (
                         <span className="text-[9px] text-blue-400 bg-[#1e2a4a] px-1.5 py-px rounded">
-                          Need {p.nextPicksNeeded} Sat
+                          Need {p.nextPicksNeeded} pick{p.nextPicksNeeded !== 1 ? "s" : ""}
                           {p.nextIsBuyBack ? " (BB)" : ""}
                         </span>
                       )}
                       <div className="flex flex-wrap gap-1 ml-auto">
-                        {d2?.picks.map((t) => (
+                        {d3?.picks.map((t) => (
                           <Pill
                             key={t}
                             team={t}
-                            result={getD2Result(t)}
+                            result={getD3Result(t)}
                           />
                         ))}
-                        {!d2 && (
+                        {!d3 && !p.isPermElim && (
                           <span className="text-[10px] text-slate-600">
-                            No picks
+                            No picks yet
+                          </span>
+                        )}
+                        {p.isPermElim && (
+                          <span className="text-[10px] text-slate-600">
+                            Out
                           </span>
                         )}
                       </div>
@@ -705,14 +739,73 @@ export default function App() {
           </div>
         )}
 
-        {/* ═══ DAY 2 LIVE ═══ */}
-        {tab === "Day 2 (Live)" && (
+        {/* ═══ DAY 2 ═══ */}
+        {tab === "Day 2" && (
           <div>
             <h2 className="text-[15px] text-slate-50 mb-1">
-              Day 2 &mdash; Friday 3/20 (TODAY)
+              Day 2 &mdash; Friday 3/20
             </h2>
             <p className="text-[11px] text-slate-500 mb-2">
               Survivors: 2 picks &middot; Buy-backs: 4 picks &middot; ONE
+              loss = eliminated
+            </p>
+            {players.filter((p) => p.history.some((e) => e.dayId === "day2")).map((p, i) => {
+              const d2 = p.history.find((e) => e.dayId === "day2");
+              const st = p.dayResults.day2 || "pending";
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-md flex-wrap mb-0.5"
+                  style={rowStyle(
+                    isPersonal && p.me,
+                    st === "eliminated"
+                  )}
+                >
+                  <span className="text-base">
+                    {st === "survived" ? "\u2705" : "\u274c"}
+                  </span>
+                  <span
+                    className="text-xs font-bold min-w-[90px]"
+                    style={{
+                      color:
+                        isPersonal && p.me ? "#a78bfa" : "#e2e8f0",
+                    }}
+                  >
+                    {p.n}
+                  </span>
+                  {d2?.buyBack && (
+                    <span className="text-[9px] text-amber-400 bg-[#3b2f08] px-1.5 py-px rounded">
+                      BB
+                    </span>
+                  )}
+                  <div className="flex gap-1 flex-wrap ml-auto">
+                    {d2?.picks.map((t) => (
+                      <Pill
+                        key={t}
+                        team={t}
+                        result={getD2Result(t)}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-slate-600">
+                    {st === "eliminated" && !p.isPermElim
+                      ? "\u2192 Buy-back"
+                      : ""}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ═══ DAY 3 LIVE ═══ */}
+        {tab === "Day 3 (Live)" && (
+          <div>
+            <h2 className="text-[15px] text-slate-50 mb-1">
+              Day 3 &mdash; Saturday 3/21 (TODAY)
+            </h2>
+            <p className="text-[11px] text-slate-500 mb-2">
+              Survivors: 1 pick &middot; Buy-backs: 4 picks &middot; ONE
               loss = eliminated
             </p>
             <div className={`${cardClass} overflow-x-auto`}>
@@ -720,8 +813,8 @@ export default function App() {
                 GAME STATUS
               </h3>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-1.5">
-                {Object.entries(scores.day2 || {}).map(([t, s]) => {
-                  const r = getD2Result(t);
+                {Object.entries(scores.day3 || {}).map(([t, s]) => {
+                  const r = getD3Result(t);
                   return (
                     <div
                       key={t}
@@ -760,11 +853,16 @@ export default function App() {
                     </div>
                   );
                 })}
+                {Object.keys(scores.day3 || {}).length === 0 && (
+                  <p className="text-[10px] text-slate-600 col-span-full">
+                    Games start at 12:10 PM ET. Live scores will appear here.
+                  </p>
+                )}
               </div>
             </div>
             {active.map((p, i) => {
-              const d2 = p.history.find((e) => e.dayId === "day2");
-              const st = p.dayResults.day2 || "pending";
+              const d3 = p.history.find((e) => e.dayId === "day3");
+              const st = d3 ? (p.dayResults.day3 || "pending") : "";
               return (
                 <div
                   key={i}
@@ -783,20 +881,29 @@ export default function App() {
                   >
                     {p.n}
                   </span>
-                  {d2?.buyBack && (
+                  {d3?.buyBack && (
                     <span className="text-[9px] text-amber-400 bg-[#3b2f08] px-1.5 py-px rounded">
-                      BB{p.totalBB > 1 ? `\u00d7${p.totalBB}` : ""}
+                      BB
                     </span>
                   )}
-                  <Badge type={st} />
+                  {d3 && <Badge type={st || "pending"} />}
                   <div className="flex gap-1 flex-wrap ml-auto">
-                    {d2?.picks.map((t) => (
+                    {d3?.picks.map((t) => (
                       <Pill
                         key={t}
                         team={t}
-                        result={getD2Result(t)}
+                        result={getD3Result(t)}
                       />
                     ))}
+                    {!d3 && !p.isPermElim && (
+                      <span className="text-[9px] text-blue-400 bg-[#1e2a4a] px-1.5 py-px rounded">
+                        Need {p.nextPicksNeeded || 1} pick{(p.nextPicksNeeded || 1) !== 1 ? "s" : ""}
+                        {p.nextIsBuyBack ? " (BB)" : ""}
+                      </span>
+                    )}
+                    {p.isPermElim && (
+                      <span className="text-[10px] text-slate-600">Out</span>
+                    )}
                   </div>
                 </div>
               );
@@ -936,8 +1043,8 @@ export default function App() {
             </h2>
             {[
               {
-                label: "TONIGHT (Fri 3/20)",
-                sub: "Remaining first round",
+                label: "FRI 3/20 \u2014 First Round (Complete)",
+                sub: "All games final",
                 games: [
                   { t: "6:50 PM", m: "(8) Clemson vs (9) Iowa" },
                   {
@@ -997,10 +1104,14 @@ export default function App() {
                 label: "SUN 3/22 \u2014 Round of 32",
                 sub: "Advancing: 1 pick \u00b7 Buy-back: 4 picks \u00b7 \u26a0 LAST BUY-BACK DAY",
                 games: [
-                  {
-                    t: "TBD",
-                    m: "Fri evening winners \u2014 R2 matchups",
-                  },
+                  { t: "12:10 PM", m: "(2) Purdue vs (7) Miami (FL)" },
+                  { t: "2:45 PM", m: "(2) Iowa State vs (7) Kentucky" },
+                  { t: "5:15 PM", m: "(4) Kansas vs (5) St. John's" },
+                  { t: "6:10 PM", m: "(3) Virginia vs (6) Tennessee" },
+                  { t: "7:10 PM", m: "(1) Florida vs (9) Iowa" },
+                  { t: "7:50 PM", m: "(1) Arizona vs (9) Utah State" },
+                  { t: "8:45 PM", m: "(2) UConn vs (7) UCLA" },
+                  { t: "9:45 PM", m: "(4) Alabama vs (5) Texas Tech" },
                 ],
               },
             ].map((sec, si) => (

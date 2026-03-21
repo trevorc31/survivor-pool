@@ -1,32 +1,32 @@
 {
   "teamResults": {
     "day1": {
-      "Vanderbilt": "won", "Michigan St": "won", "St. Louis": "won", "Nebraska": "won",
+      "Vanderbilt": "won", "Michigan State": "won", "St. Louis": "won", "Nebraska": "won",
       "Illinois": "won", "Arkansas": "won", "Louisville": "won", "Gonzaga": "won",
       "Duke": "won", "Houston": "won", "Texas A&M": "won", "VCU": "won",
-      "Michigan State": "won", "Wisconsin": "lost", "North Carolina": "lost",
+      "Wisconsin": "lost", "North Carolina": "lost",
       "BYU": "lost", "Ohio State": "lost", "Saint Mary's": "lost", "Georgia": "lost"
     },
     "day2": {
       "Santa Clara": "lost", "Kentucky": "won", "Texas Tech": "won", "Virginia": "won",
-      "Iowa State": "in_progress", "Alabama": "in_progress", "Utah State": "in_progress",
-      "Tennessee": "in_progress", "Miami (OH)": "in_progress",
-      "Iowa": "scheduled", "St. John's": "scheduled", "UCLA": "scheduled",
-      "Purdue": "scheduled", "Florida": "scheduled", "Kansas": "scheduled",
-      "UConn": "scheduled", "Miami (FL)": "scheduled"
+      "Iowa State": "won", "Alabama": "won", "Utah State": "won",
+      "Tennessee": "won", "Miami (OH)": "lost",
+      "Iowa": "won", "St. John's": "won", "UCLA": "won",
+      "Purdue": "won", "Florida": "won", "Kansas": "won",
+      "UConn": "won", "Miami (FL)": "won"
     }
   },
   "scores": {
     "day2": {
       "Santa Clara": "84-89 vs Kentucky (OT)", "Kentucky": "89-84 vs Santa Clara (OT)",
       "Texas Tech": "91-71 vs Akron", "Virginia": "82-73 vs Wright State",
-      "Iowa State": "79-43 vs Tenn. St (2H)", "Alabama": "49-39 vs Hofstra (2H)",
-      "Utah State": "26-20 vs Villanova (1H)", "Tennessee": "10-13 vs Miami OH (1H)",
-      "Miami (OH)": "13-10 vs Tennessee (1H)",
-      "Iowa": "6:50 PM vs Clemson", "St. John's": "7:10 PM vs N. Iowa",
-      "UCLA": "7:25 PM vs UCF", "Purdue": "7:35 PM vs Queens",
-      "Florida": "9:25 PM vs Prairie View", "Kansas": "9:45 PM vs Cal Baptist",
-      "UConn": "10:00 PM vs Furman", "Miami (FL)": "10:10 PM vs Missouri"
+      "Iowa State": "108-74 vs Tennessee St", "Alabama": "90-70 vs Hofstra",
+      "Utah State": "86-76 vs Villanova", "Tennessee": "78-56 vs Miami (OH)",
+      "Miami (OH)": "56-78 vs Tennessee",
+      "Iowa": "67-61 vs Clemson", "St. John's": "79-53 vs N. Iowa",
+      "UCLA": "75-71 vs UCF", "Purdue": "104-71 vs Queens",
+      "Florida": "114-55 vs Prairie View", "Kansas": "68-60 vs Cal Baptist",
+      "UConn": "82-71 vs Furman", "Miami (FL)": "80-66 vs Missouri"
     }
   },
   "days": [
