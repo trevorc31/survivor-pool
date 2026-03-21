@@ -32,7 +32,7 @@ const SCHEDULE_DAYS = [
     label: "SAT 3/21 — Round of 32",
     sub: "Advancing: 1 pick · Buy-back: 4 picks",
     games: [
-      { t: "12:10 PM", m: "(1) Michigan vs (9) Saint Louis", teams: ["Michigan", "Saint Louis"] },
+      { t: "12:10 PM", m: "(1) Michigan vs (9) Saint Louis", teams: ["Michigan", "St. Louis"] },
       { t: "2:45 PM", m: "(3) Michigan State vs (6) Louisville", teams: ["Michigan State", "Louisville"] },
       { t: "5:15 PM", m: "(1) Duke vs (9) TCU", teams: ["Duke", "TCU"] },
       { t: "6:10 PM", m: "(2) Houston vs (10) Texas A&M", teams: ["Houston", "Texas A&M"] },

@@ -33,7 +33,7 @@ const ESPN_TO_APP: Record<string, string> = {
 
 // All teams that appear in the app (from players.json picks + results.json)
 export const APP_TEAMS = new Set([
-  "Vanderbilt", "Michigan St", "Michigan State", "St. Louis", "Nebraska",
+  "Vanderbilt", "Michigan State", "St. Louis", "Nebraska",
   "Illinois", "Arkansas", "Louisville", "Gonzaga", "Duke", "Houston",
   "Texas A&M", "VCU", "Wisconsin", "North Carolina", "BYU", "Ohio State",
   "Saint Mary's", "Georgia", "Santa Clara", "Kentucky", "Texas Tech",

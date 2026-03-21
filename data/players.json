@@ -1,6 +1,6 @@
 [
   { "n": "Jason C", "me": false, "history": [
-    { "dayId": "day1", "picks": ["Vanderbilt", "Michigan St"], "buyBack": false },
+    { "dayId": "day1", "picks": ["Vanderbilt", "Michigan State"], "buyBack": false },
     { "dayId": "day2", "picks": ["Alabama", "Kansas"], "buyBack": false }
   ]},
   { "n": "Rob", "me": false, "history": [
@@ -8,7 +8,7 @@
     { "dayId": "day2", "picks": ["St. John's", "Virginia"], "buyBack": false }
   ]},
   { "n": "Zach", "me": false, "history": [
-    { "dayId": "day1", "picks": ["Nebraska", "Michigan St"], "buyBack": false },
+    { "dayId": "day1", "picks": ["Nebraska", "Michigan State"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kentucky", "Kansas"], "buyBack": false }
   ]},
   { "n": "Ben", "me": false, "history": [
@@ -24,7 +24,7 @@
     { "dayId": "day2", "picks": ["Alabama", "St. John's"], "buyBack": false }
   ]},
   { "n": "Teddy", "me": false, "history": [
-    { "dayId": "day1", "picks": ["Michigan St", "Nebraska"], "buyBack": false },
+    { "dayId": "day1", "picks": ["Michigan State", "Nebraska"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kansas", "Purdue"], "buyBack": false }
   ]},
   { "n": "Tyler", "me": false, "history": [
