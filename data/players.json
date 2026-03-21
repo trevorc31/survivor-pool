@@ -112,7 +112,7 @@
   { "n": "Josh", "me": false, "history": [
     { "dayId": "day1", "picks": ["Saint Mary's", "Wisconsin"], "buyBack": false },
     { "dayId": "day2", "picks": ["St. John's", "UCLA", "Iowa", "Virginia"], "buyBack": true },
-    { "dayId": "day3", "picks": ["Michigan State"], "buyBack": false }
+    { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false }
   ]},
   { "n": "Artrel", "me": false, "history": [
     { "dayId": "day1", "picks": ["Wisconsin", "Gonzaga"], "buyBack": false },
