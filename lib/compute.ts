@@ -176,6 +176,7 @@ export const FUT: Record<string, { dr: number; t: number; o: string }> = {
   "High Point": { dr: 0.05, t: 5, o: "+100000" },
   "Miami (OH)": { dr: 0.03, t: 5, o: "+200000" },
   "Santa Clara": { dr: 0.02, t: 5, o: "+100000" },
+  Texas: { dr: 0.30, t: 4, o: "+12000" },
 };
 
 export const WP: Record<string, number> = {
@@ -188,7 +189,7 @@ export const WP: Record<string, number> = {
   Louisville: 0.32, Duke: 0.88, TCU: 0.12, Houston: 0.75,
   "Texas A&M": 0.25, Gonzaga: 0.70, Nebraska: 0.62,
   Vanderbilt: 0.38, Illinois: 0.72, VCU: 0.28, Arkansas: 0.78,
-  "High Point": 0.22,
+  "High Point": 0.22, Texas: 0.30, Arizona: 0.92,
 };
 
 // Predict how many opponents will pick each team today

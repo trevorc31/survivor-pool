@@ -40,6 +40,7 @@ export const APP_TEAMS = new Set([
   "Virginia", "Iowa State", "Alabama", "Utah State", "Tennessee",
   "Miami (OH)", "Iowa", "St. John's", "UCLA", "Purdue", "Florida",
   "Kansas", "UConn", "Miami (FL)", "High Point", "TCU",
+  "Michigan", "Texas", "Arizona",
 ]);
 
 export function mapEspnTeamName(espnName: string): string | null {
