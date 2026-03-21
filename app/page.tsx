@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   computePlayer,
+  computeEdgeScore,
   FUT,
   WP,
   MAX_BB,
@@ -12,6 +13,7 @@ import {
   type PlayerComputed,
   type DayConfig,
 } from "@/lib/compute";
+import type { OddsResponse } from "@/app/api/odds/route";
 import playersData from "@/data/players.json";
 import resultsData from "@/data/results.json";
 
@@ -129,6 +131,23 @@ export default function App() {
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [hasLiveGames, setHasLiveGames] = useState(true);
 
+  // Odds state — manual refresh only
+  const [oddsData, setOddsData] = useState<OddsResponse | null>(null);
+  const [oddsLoading, setOddsLoading] = useState(false);
+
+  const fetchOdds = useCallback(async () => {
+    setOddsLoading(true);
+    try {
+      const res = await fetch("/api/odds");
+      const data: OddsResponse = await res.json();
+      setOddsData(data);
+    } catch (e) {
+      console.error("Odds fetch failed:", e);
+    } finally {
+      setOddsLoading(false);
+    }
+  }, []);
+
   const fetchScores = useCallback(async () => {
     try {
       const res = await fetch("/api/live-scores");
@@ -233,23 +252,46 @@ export default function App() {
       .filter((t) => !trevor.usedTeams.has(t))
       .map((t) => {
         const f = FUT[t] || { dr: 0.3, t: 4, o: "N/A" };
-        const wp = WP[t] ?? 0.5;
-        const dr = f.dr;
         const u = 1 - (ou[t] || 0) / tot;
-        const sc = wp * 0.35 + (1 - dr) * 0.3 + u * 0.35;
+        const oddsTeam = oddsData?.teams?.[t];
+
+        const { score, components } = computeEdgeScore(t, {
+          impliedWinProb: oddsTeam?.impliedWinProb ?? null,
+          deepRunProb: f.dr,
+          uniqueness: u,
+          sharpMoney: oddsTeam?.sharp?.sharpMoney ?? null,
+          systems: oddsTeam?.sharp?.systems ?? null,
+          spread: oddsTeam?.spread ?? null,
+        });
+
+        // Determine signal: bull/bear/neutral
+        const wp = oddsTeam?.impliedWinProb ?? WP[t] ?? 0.5;
+        const sharp = oddsTeam?.sharp?.sharpMoney ?? null;
+        let signal: "bull" | "bear" | "neutral" = "neutral";
+        if (sharp !== null && sharp >= 65 && wp >= 0.7) signal = "bull";
+        else if (sharp !== null && sharp < 40) signal = "bear";
+        else if (wp < 0.4) signal = "bear";
+
         return {
           team: t,
           wp,
-          dr,
+          dr: f.dr,
           on: ou[t] || 0,
           u,
-          sc,
+          sc: score,
           tier: f.t || 4,
           odds: f.o || "N/A",
+          moneyline: oddsTeam?.moneyline ?? null,
+          spread: oddsTeam?.spread ?? null,
+          sharpMoney: oddsTeam?.sharp?.sharpMoney ?? null,
+          systems: oddsTeam?.sharp?.systems ?? null,
+          signal,
+          components,
+          liveOdds: !!oddsTeam?.impliedWinProb,
         };
       })
       .sort((a, b) => b.sc - a.sc);
-  }, [isPersonal, trevor, active]);
+  }, [isPersonal, trevor, active, oddsData]);
 
   // ── Password Prompt ──
   if (mode === "pw_prompt") {
@@ -945,14 +987,64 @@ export default function App() {
         {/* ═══ EDGE LAB ═══ */}
         {tab === "Edge Lab" && isPersonal && trevor && (
           <div>
-            <h2 className="text-[15px] text-slate-50 mb-0.5">
-              Edge Lab &mdash; Trevor&apos;s Strategy
-            </h2>
-            <p className="text-[11px] text-slate-500 mb-3.5">
-              Win prob &times; expendability &times; uniqueness. DEPTH =
-              projected tournament run (futures odds). RED = save for
-              later.
+            <div className="flex items-center justify-between mb-0.5">
+              <h2 className="text-[15px] text-slate-50">
+                Edge Lab &mdash; Trevor&apos;s Strategy
+              </h2>
+              <button
+                onClick={fetchOdds}
+                disabled={oddsLoading}
+                className="text-[10px] px-2.5 py-1 rounded border border-violet-700 text-violet-400 hover:bg-violet-900/30 disabled:opacity-50"
+              >
+                {oddsLoading ? "Loading..." : "Refresh Odds"}
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-500 mb-1">
+              Score = 25% win prob + 20% futures + 25% uniqueness + 20%
+              sharp + 10% line value
             </p>
+            {/* Status bar */}
+            <div className="flex items-center gap-3 text-[9px] text-slate-600 mb-3.5">
+              {oddsData && (
+                <>
+                  <span className="flex items-center gap-1">
+                    <span
+                      className="inline-block w-1.5 h-1.5 rounded-full"
+                      style={{
+                        background: oddsData.fallback
+                          ? "#f87171"
+                          : "#4ade80",
+                      }}
+                    />
+                    {oddsData.fallback
+                      ? "Odds: fallback (no API)"
+                      : `Odds: ${new Date(oddsData.lastOddsUpdate).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })} ET`}
+                  </span>
+                  {oddsData.creditsRemaining !== null && (
+                    <span
+                      style={{
+                        color:
+                          oddsData.creditsRemaining > 200
+                            ? "#4ade80"
+                            : oddsData.creditsRemaining > 50
+                              ? "#fbbf24"
+                              : "#f87171",
+                      }}
+                    >
+                      Credits: {oddsData.creditsRemaining}
+                    </span>
+                  )}
+                  {oddsData.sharpLastUpdated && (
+                    <span>
+                      Sharp: {new Date(oddsData.sharpLastUpdated).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })} ET
+                    </span>
+                  )}
+                </>
+              )}
+              {!oddsData && (
+                <span>Click &quot;Refresh Odds&quot; to load live data</span>
+              )}
+            </div>
             <div className={cardClass}>
               <h3 className="m-0 mb-1.5 text-[10px] text-slate-600">
                 TEAMS ALREADY BURNED ({trevor.usedTeams.size})
@@ -963,6 +1055,7 @@ export default function App() {
                 ))}
               </div>
             </div>
+            {/* Dynamic strategy summary */}
             <div
               className="rounded-lg p-3.5 mb-3"
               style={{
@@ -971,73 +1064,73 @@ export default function App() {
               }}
             >
               <h3 className="m-0 mb-1.5 text-[11px] text-violet-400">
-                SATURDAY STRATEGY (BUY-BACK #{trevor.totalBB + 1})
+                STRATEGY SUMMARY
               </h3>
               <div className="text-[11px] text-slate-300 leading-7">
-                <p className="m-0 mb-1.5">
-                  You need{" "}
-                  <strong className="text-amber-400">
-                    4 picks Saturday
-                  </strong>
-                  .
+                <p className="m-0 mb-1">
+                  <span className="text-green-400">USE NOW:</span>{" "}
+                  {edge
+                    .filter((t) => t.tier >= 4)
+                    .map((t) => t.team)
+                    .join(", ") || "None"}
                 </p>
                 <p className="m-0 mb-1">
-                  <span className="text-green-400">
-                    &#x1f7e2; USE NOW:
-                  </span>{" "}
-                  Nebraska, High Point, Vanderbilt, TCU, VCU &mdash;
-                  short runs, burn them now.
+                  <span className="text-red-500">SAVE:</span>{" "}
+                  {edge
+                    .filter((t) => t.tier <= 2)
+                    .map((t) => t.team)
+                    .join(", ") || "None"}
                 </p>
                 <p className="m-0 mb-1">
-                  <span className="text-red-500">
-                    &#x1f534; SAVE:
-                  </span>{" "}
-                  Florida, Duke, Arizona, Houston, Michigan, Illinois,
-                  Iowa State, Purdue &mdash; need these Sweet 16+.
+                  <span className="text-blue-400">FLEX:</span>{" "}
+                  {edge
+                    .filter((t) => t.tier === 3)
+                    .map((t) => t.team)
+                    .join(", ") || "None"}
                 </p>
-                <p className="m-0 mb-1">
-                  <span className="text-blue-400">
-                    &#x1f535; FLEX:
-                  </span>{" "}
-                  Virginia, Michigan State, St. John&apos;s, Gonzaga,
-                  Kentucky, Arkansas.
-                </p>
-                <p className="m-0 mb-1">
-                  <span className="text-amber-400">
-                    &#x26a1; UNIQUENESS:
-                  </span>{" "}
-                  Kansas picked by 9+ people. Shared paths reduce your
-                  edge to win the pool.
-                </p>
-                <p className="m-0 text-slate-400 text-[10px]">
-                  After Sunday: no buy-backs. 1 pick/day. Deep-run
-                  teams are essential.
-                </p>
+                {edge.some((t) => t.signal === "bull") && (
+                  <p className="m-0 mb-1">
+                    <span className="text-emerald-400">SHARP FAVORITES:</span>{" "}
+                    {edge
+                      .filter((t) => t.signal === "bull")
+                      .map((t) => t.team)
+                      .join(", ")}
+                  </p>
+                )}
+                {edge.some((t) => t.signal === "bear") && (
+                  <p className="m-0">
+                    <span className="text-red-400">SHARP FADES:</span>{" "}
+                    {edge
+                      .filter((t) => t.signal === "bear")
+                      .map((t) => t.team)
+                      .join(", ")}
+                  </p>
+                )}
               </div>
             </div>
             <div className={cardClass}>
               <h3 className="m-0 mb-2 text-[10px] text-slate-600">
                 AVAILABLE TEAMS RANKED
               </h3>
-              <div className="text-[9px] text-slate-600 mb-2">
-                Score = 35% win prob + 30% expendability + 35%
-                uniqueness
-              </div>
               <div className="overflow-x-auto">
-                <div className="grid grid-cols-[28px_1fr_50px_55px_55px_55px_55px_50px] gap-1 px-1.5 py-1 text-[9px] text-slate-600 font-bold min-w-[500px]">
+                <div className="grid grid-cols-[24px_1fr_44px_44px_44px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1 text-[9px] text-slate-600 font-bold min-w-[600px]">
                   <span>#</span>
                   <span>TEAM</span>
                   <span>WIN%</span>
+                  <span>SPRD</span>
                   <span>DEPTH</span>
                   <span>UNIQ</span>
+                  <span>SHRP%</span>
+                  <span>SYS</span>
                   <span>SCORE</span>
                   <span>TIER</span>
                   <span>ODDS</span>
+                  <span></span>
                 </div>
                 {edge.map((t, i) => (
                   <div
                     key={t.team}
-                    className="grid grid-cols-[28px_1fr_50px_55px_55px_55px_55px_50px] gap-1 px-1.5 py-1.5 rounded text-[11px] items-center min-w-[500px]"
+                    className="grid grid-cols-[24px_1fr_44px_44px_44px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1.5 rounded text-[11px] items-center min-w-[600px]"
                     style={{
                       background:
                         i < 3
@@ -1059,8 +1152,11 @@ export default function App() {
                     >
                       {i + 1}
                     </span>
-                    <span className="font-semibold text-slate-200">
+                    <span className="font-semibold text-slate-200 flex items-center gap-1">
                       {t.team}
+                      {t.liveOdds && (
+                        <span className="inline-block w-1 h-1 rounded-full bg-green-500" title="Live odds" />
+                      )}
                     </span>
                     <span
                       style={{
@@ -1073,6 +1169,16 @@ export default function App() {
                       }}
                     >
                       {(t.wp * 100).toFixed(0)}%
+                    </span>
+                    <span
+                      className="text-[10px]"
+                      style={{
+                        color: t.spread !== null
+                          ? (t.spread <= -10 ? "#4ade80" : t.spread <= -3 ? "#fbbf24" : "#f87171")
+                          : "#334155",
+                      }}
+                    >
+                      {t.spread !== null ? (t.spread > 0 ? `+${t.spread}` : t.spread) : "-"}
                     </span>
                     <span
                       className="text-[10px]"
@@ -1104,6 +1210,24 @@ export default function App() {
                       {(t.u * 100).toFixed(0)}%
                     </span>
                     <span
+                      style={{
+                        color: t.sharpMoney !== null
+                          ? (t.sharpMoney >= 65 ? "#4ade80" : t.sharpMoney >= 50 ? "#fbbf24" : "#f87171")
+                          : "#334155",
+                      }}
+                    >
+                      {t.sharpMoney !== null ? `${t.sharpMoney}%` : "-"}
+                    </span>
+                    <span
+                      style={{
+                        color: t.systems !== null
+                          ? (t.systems >= 3 ? "#4ade80" : t.systems >= 1 ? "#fbbf24" : "#f87171")
+                          : "#334155",
+                      }}
+                    >
+                      {t.systems !== null ? t.systems : "-"}
+                    </span>
+                    <span
                       className="font-extrabold"
                       style={{
                         color:
@@ -1119,6 +1243,15 @@ export default function App() {
                     <TBadge tier={t.tier} />
                     <span className="text-[9px] text-slate-600">
                       {t.odds}
+                    </span>
+                    <span
+                      className="text-[12px] text-center"
+                      style={{
+                        color: t.signal === "bull" ? "#4ade80" : t.signal === "bear" ? "#f87171" : "#475569",
+                      }}
+                      title={t.signal === "bull" ? "Sharp + high WP" : t.signal === "bear" ? "Fade signal" : "Neutral"}
+                    >
+                      {t.signal === "bull" ? "\u25b2" : t.signal === "bear" ? "\u25bc" : "\u2013"}
                     </span>
                   </div>
                 ))}

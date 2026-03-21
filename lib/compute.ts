@@ -183,3 +183,70 @@ export const WP: Record<string, number> = {
   Vanderbilt: 0.38, Illinois: 0.72, VCU: 0.28, Arkansas: 0.78,
   "High Point": 0.22,
 };
+
+// Enhanced edge scoring with 5 components
+export interface EdgeScoreInput {
+  impliedWinProb: number | null;
+  deepRunProb: number;
+  uniqueness: number;
+  sharpMoney: number | null;
+  systems: number | null;
+  spread: number | null;
+}
+
+export interface EdgeComponents {
+  wp: number;
+  futures: number;
+  uniq: number;
+  sharp: number;
+  lineValue: number;
+}
+
+export function computeEdgeScore(
+  team: string,
+  opts: EdgeScoreInput
+): { score: number; components: EdgeComponents } {
+  // 25% — win probability (live implied or fallback)
+  const wpVal = opts.impliedWinProb ?? WP[team] ?? 0.5;
+  const wpComponent = wpVal * 0.25;
+
+  // 20% — futures expendability (inverse of deep run prob)
+  const futuresComponent = (1 - opts.deepRunProb) * 0.2;
+
+  // 25% — uniqueness
+  const uniqComponent = opts.uniqueness * 0.25;
+
+  // 20% — sharp signals
+  let sharpComponent: number;
+  if (opts.sharpMoney !== null || opts.systems !== null) {
+    const sharpNorm = opts.sharpMoney !== null ? opts.sharpMoney / 100 : 0.5;
+    const sysNorm = opts.systems !== null ? Math.min(opts.systems, 5) / 5 : 0.5;
+    sharpComponent = (sharpNorm * 0.7 + sysNorm * 0.3) * 0.2;
+  } else {
+    sharpComponent = 0.5 * 0.2; // neutral when no data
+  }
+
+  // 10% — line value (moderate favorites = highest value)
+  let lineValueComponent: number;
+  if (opts.spread !== null) {
+    const absSpread = Math.abs(opts.spread);
+    lineValueComponent =
+      Math.min(Math.max((absSpread - 3) / 20, 0), 1) * 0.1;
+  } else {
+    lineValueComponent = 0.5 * 0.1; // neutral when no data
+  }
+
+  const score =
+    wpComponent + futuresComponent + uniqComponent + sharpComponent + lineValueComponent;
+
+  return {
+    score,
+    components: {
+      wp: wpComponent,
+      futures: futuresComponent,
+      uniq: uniqComponent,
+      sharp: sharpComponent,
+      lineValue: lineValueComponent,
+    },
+  };
+}
