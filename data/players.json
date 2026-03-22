@@ -19,12 +19,14 @@
   { "n": "Ben", "me": false, "history": [
     { "dayId": "day1", "picks": ["Gonzaga", "Arkansas"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kansas", "Virginia"], "buyBack": false },
-    { "dayId": "day3", "picks": ["Illinois"], "buyBack": false }
+    { "dayId": "day3", "picks": ["Illinois"], "buyBack": false },
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
   ]},
   { "n": "Sara", "me": false, "history": [
     { "dayId": "day1", "picks": ["Nebraska", "Vanderbilt"], "buyBack": false },
     { "dayId": "day2", "picks": ["Texas Tech", "Tennessee"], "buyBack": false },
-    { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false }
+    { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false },
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
   ]},
   { "n": "Kyle", "me": false, "history": [
     { "dayId": "day1", "picks": ["Nebraska", "Vanderbilt"], "buyBack": false },
@@ -64,7 +66,8 @@
   { "n": "Dan", "me": false, "history": [
     { "dayId": "day1", "picks": ["Houston", "Gonzaga"], "buyBack": false },
     { "dayId": "day2", "picks": ["Miami (FL)", "Iowa"], "buyBack": false },
-    { "dayId": "day3", "picks": ["Vanderbilt"], "buyBack": false }
+    { "dayId": "day3", "picks": ["Vanderbilt"], "buyBack": false },
+    { "dayId": "day4", "picks": ["Alabama", "Purdue", "Arizona", "Kansas"], "buyBack": true }
   ]},
   { "n": "Mike", "me": false, "history": [
     { "dayId": "day1", "picks": ["Duke", "Texas A&M"], "buyBack": false },
@@ -143,7 +146,8 @@
   { "n": "Brandon", "me": false, "history": [
     { "dayId": "day1", "picks": ["Ohio State", "Nebraska"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kansas", "Utah State", "Virginia", "Iowa"], "buyBack": true },
-    { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false }
+    { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false },
+    { "dayId": "day4", "picks": ["UConn"], "buyBack": false }
   ]},
   { "n": "Sean", "me": false, "history": [
     { "dayId": "day1", "picks": ["Georgia", "Saint Mary's"], "buyBack": false },
