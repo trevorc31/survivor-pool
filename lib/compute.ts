@@ -87,7 +87,8 @@ export function computePlayer(
         // No more days in the tournament
         isPermElim = true;
       } else {
-        // Check if the next day already has final results (won/lost, not just scheduled/in_progress)
+        // Check if other players have submitted picks for the next day
+        // If so, this player chose not to buy back → permanently eliminated
         const nextDayResults = teamResults[nextDay.id] || {};
         const hasFinalResults = Object.values(nextDayResults).some(
           (r) => r === "won" || r === "lost"
@@ -96,6 +97,17 @@ export function computePlayer(
         // Also check if they've used all buy-backs
         if (totalBB >= MAX_BB) isPermElim = true;
       }
+    }
+  }
+
+  // If eliminated on a non-latest day and no subsequent picks exist, mark as perm eliminated
+  // This catches players who chose not to buy back even before games start
+  if (!isPermElim && lastDayResult === "eliminated") {
+    const lastHistoryDayIdx = days.findIndex((d) => d.id === lastEntry?.dayId);
+    const currentDayIdx = days.length - 1; // latest configured day
+    if (lastHistoryDayIdx < currentDayIdx) {
+      // Their last entry is from a previous day and they were eliminated — they didn't buy back
+      isPermElim = true;
     }
   }
 
