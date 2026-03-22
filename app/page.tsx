@@ -1273,354 +1273,332 @@ export default function App() {
               )}
             </div>
 
-            {/* Your situation */}
-            <div
-              className="rounded-lg p-3.5 mb-3"
-              style={{ background: "#0a1420", border: "1px solid #1e3a5f" }}
-            >
-              <h3 className="m-0 mb-1.5 text-[11px] text-blue-400">
-                YOUR SITUATION
-              </h3>
-              <div className="text-[11px] text-slate-300 leading-6">
-                <p className="m-0 mb-1">
-                  You need{" "}
-                  <strong className="text-amber-400">
-                    {trevor.nextPicksNeeded} pick{trevor.nextPicksNeeded !== 1 ? "s" : ""}
-                  </strong>{" "}
-                  for {SCHEDULE_DAYS[0]?.label?.split(" — ")[0] || "next day"}
-                  {trevor.nextIsBuyBack && (
-                    <span className="text-red-400"> (buy-back #{trevor.totalBB + 1}/{MAX_BB}, +${BB_COST})</span>
-                  )}
-                </p>
-                <p className="m-0 mb-1">
-                  Teams burned ({trevor.usedTeams.size}): {" "}
-                  <span className="text-slate-500">{[...trevor.usedTeams].join(", ")}</span>
-                </p>
-              </div>
-            </div>
+            {/* ── Sunday Buy-Back Decision ── */}
+            {(() => {
+              const sundayDay = SCHEDULE_DAYS.find((d) => d.dayId === "day4");
+              const dayEdge = edgeByDay[sundayDay?.dayId || ""] || [];
+              const available = dayEdge.filter((t) => !trevor.usedTeams.has(t.team));
+              const unavailable = dayEdge.filter((t) => trevor.usedTeams.has(t.team));
+              const n = trevor.nextPicksNeeded || 4;
 
-            {/* ── Per-day sections ── */}
-            {SCHEDULE_DAYS.map((day) => {
-              const dayEdge = edgeByDay[day.dayId] || [];
-              const dayRecs = recommendedByDay[day.dayId] || [];
-              const isFirstDay = day === SCHEDULE_DAYS[0];
-              if (dayEdge.length === 0 && day.games.length === 0) return null;
+              // Build optimal combos of n picks from available teams
+              // Score combos by: combined survival prob × uniqueness bonus
+              const combos: { picks: typeof available; survProb: number; avgUniq: number; comboScore: number; savedDeep: typeof available }[] = [];
+              const deepTeams = available.filter((t) => t.dr >= 0.7);
+              const allAvail = available.filter((t) => t.wp > 0);
+
+              if (allAvail.length >= n) {
+                // Generate top combos using greedy approach
+                // Strategy 1: Max survival (pick highest WP)
+                const bySurvival = [...allAvail].sort((a, b) => b.wp - a.wp);
+                const s1 = bySurvival.slice(0, n);
+
+                // Strategy 2: Burn expendable, save deep (prefer low depth teams)
+                const byBurnFirst = [...allAvail]
+                  .filter((t) => t.wp >= 0.5)
+                  .sort((a, b) => {
+                    // prefer expendable (low depth) with high WP
+                    const aScore = a.wp * (1 - a.dr * 0.5);
+                    const bScore = b.wp * (1 - b.dr * 0.5);
+                    return bScore - aScore;
+                  });
+                const s2 = byBurnFirst.slice(0, n);
+
+                // Strategy 3: Contrarian (maximize uniqueness while surviving)
+                const byContrarian = [...allAvail]
+                  .filter((t) => t.wp >= 0.45)
+                  .sort((a, b) => {
+                    const aScore = a.u * 0.5 + a.wp * 0.3 + (1 - a.dr) * 0.2;
+                    const bScore = b.u * 0.5 + b.wp * 0.3 + (1 - b.dr) * 0.2;
+                    return bScore - aScore;
+                  });
+                const s3 = byContrarian.slice(0, n);
+
+                [s1, s2, s3].forEach((picks) => {
+                  if (picks.length < n) return;
+                  const survProb = picks.reduce((p, t) => p * t.wp, 1);
+                  const avgUniq = picks.reduce((s, t) => s + t.u, 0) / picks.length;
+                  const savedDeep = deepTeams.filter((dt) => !picks.some((p) => p.team === dt.team));
+                  combos.push({
+                    picks,
+                    survProb,
+                    avgUniq,
+                    comboScore: survProb * (0.5 + avgUniq * 0.5),
+                    savedDeep,
+                  });
+                });
+              }
+
+              // Deduplicate combos by team set
+              const seen = new Set<string>();
+              const uniqueCombos = combos.filter((c) => {
+                const key = c.picks.map((p) => p.team).sort().join(",");
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              }).sort((a, b) => b.comboScore - a.comboScore);
+
+              // Calculate: is buy-back worth it?
+              const bestSurvival = uniqueCombos[0]?.survProb || 0;
+              const remainingDays = 7; // approximate days left after Sunday
+              const perDaySurvival = 0.85; // avg single-pick survival rate
+              const overallWinProb = bestSurvival * Math.pow(perDaySurvival, remainingDays);
+              const potSize = players.filter((p) => !p.isPermElim).length > 0
+                ? players.reduce((s, p) => s + BUY_IN + p.totalBB * BB_COST, 0)
+                : 0;
+              const bbCost = BB_COST;
+              const expectedValue = overallWinProb * potSize - bbCost;
 
               return (
-                <div key={day.dayId} className="mb-6">
-                  {/* Day header */}
-                  <div
-                    className="rounded-lg p-3 mb-3"
-                    style={{ background: "#0c1222", border: "1px solid #334155" }}
-                  >
-                    <h3 className="m-0 text-[13px] text-slate-100 font-bold">{day.label}</h3>
-                    <p className="m-0 text-[10px] text-slate-500 mt-0.5">{day.sub}</p>
-                    {day.games.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-500">
-                        {day.games.map((g, gi) => (
-                          <span key={gi}>{g.t} &mdash; {g.m}</span>
-                        ))}
-                      </div>
-                    )}
-                    {day.games.length === 0 && (
-                      <p className="m-0 mt-1 text-[10px] text-slate-600">Games TBD</p>
-                    )}
-                  </div>
-
-                  {/* Recommended picks for this day */}
-                  {dayRecs.length > 0 && (
-                    <div
-                      className="rounded-lg p-3.5 mb-3"
-                      style={{ background: "#0a1a0a", border: "1px solid #166534" }}
-                    >
-                      <h3 className="m-0 mb-2 text-[11px] text-green-400">
-                        RECOMMENDED PICKS {isFirstDay && trevor.nextPicksNeeded > 1 ? `(${trevor.nextPicksNeeded} needed)` : ""}
-                      </h3>
-                      <div className="flex flex-col gap-2.5">
-                        {dayRecs.map((t, i) => (
-                          <div key={t.team}>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-green-400 font-bold text-[13px]">{i + 1}.</span>
-                              <span className="text-slate-100 font-bold text-[13px]">{t.team}</span>
-                              {t.opponent && (
-                                <span className="text-slate-500 text-[11px]">vs {t.opponent}</span>
-                              )}
-                              <span
-                                className="text-[10px] ml-auto font-bold"
-                                style={{ color: t.wp >= 0.8 ? "#4ade80" : t.wp >= 0.5 ? "#fbbf24" : "#f87171" }}
-                              >
-                                {(t.wp * 100).toFixed(0)}% WP
-                              </span>
-                              {t.spread !== null && (
-                                <span className="text-[10px] text-slate-400">({t.spread > 0 ? `+${t.spread}` : t.spread})</span>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-slate-400 pl-5 leading-5">
-                              {t.tier >= 4 && (
-                                <span className="text-green-500">Expendable (short tournament run). </span>
-                              )}
-                              {t.tier <= 2 && (
-                                <span className="text-red-400">Warning: deep-run team, burning early. </span>
-                              )}
-                              {t.tier === 3 && (
-                                <span className="text-blue-400">Flex pick (moderate depth). </span>
-                              )}
-                              {t.u >= 0.85 && (
-                                <span className="text-emerald-400">Unique pick ({t.on === 0 ? "no one" : `only ${t.on}`} used). </span>
-                              )}
-                              {t.u < 0.5 && (
-                                <span className="text-amber-400">Heavily used by pool ({t.on} others). </span>
-                              )}
-                              {t.signal === "bull" && (
-                                <span className="text-emerald-400">Sharp money agrees. </span>
-                              )}
-                              {t.signal === "bear" && (
-                                <span className="text-red-400">Sharp money fading this pick. </span>
-                              )}
-                              Score: {(t.sc * 100).toFixed(0)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Insights for this day */}
-                  {dayEdge.length > 0 && (
-                    <div
-                      className="rounded-lg p-3.5 mb-3"
-                      style={{ background: "#140a24", border: "1px solid #7c3aed" }}
-                    >
-                      <h3 className="m-0 mb-1.5 text-[11px] text-violet-400">
-                        INSIGHTS
-                      </h3>
-                      <div className="text-[11px] text-slate-300 leading-6">
-                        {(() => {
-                          const pool = dayEdge;
-                          const burnable = pool.filter((t) => t.tier >= 4 && t.wp >= 0.6);
-                          const risky = pool.filter((t) => t.wp < 0.5 && t.wp > 0);
-                          const contrarian = pool.filter((t) => t.wp >= 0.6 && t.estPicks < 2).sort((a, b) => a.estPicks - b.estPicks);
-                          const chalky = pool.filter((t) => t.estPicks >= 4).sort((a, b) => b.estPicks - a.estPicks);
-                          return (
-                            <>
-                              {burnable.length > 0 && (
-                                <p className="m-0 mb-1.5">
-                                  <span className="text-green-400">Burn candidates:</span>{" "}
-                                  {burnable.map((t) => `${t.team} (${(t.wp * 100).toFixed(0)}%)`).join(", ")}.
-                                  Short futures, safe to use now.
-                                </p>
-                              )}
-                              {contrarian.length > 0 && (
-                                <p className="m-0 mb-1.5">
-                                  <span className="text-emerald-400">Contrarian plays:</span>{" "}
-                                  {contrarian.map((t) => `${t.team} (~${t.estPicks.toFixed(1)} est picks)`).join(", ")}.
-                                  Strong teams few others are expected to pick — high differentiation value.
-                                </p>
-                              )}
-                              {chalky.length > 0 && (
-                                <p className="m-0 mb-1.5">
-                                  <span className="text-amber-400">Chalk alert:</span>{" "}
-                                  {chalky.map((t) => `${t.team} (~${t.estPicks.toFixed(1)} est picks)`).join(", ")}.
-                                  Heavily picked — a loss here eliminates many opponents.
-                                </p>
-                              )}
-                              {risky.length > 0 && (
-                                <p className="m-0 mb-1.5">
-                                  <span className="text-red-400">Upset risks:</span>{" "}
-                                  {risky.map((t) => `${t.team} (${(t.wp * 100).toFixed(0)}%)`).join(", ")}.
-                                  Win probability under 50%.
-                                </p>
-                              )}
-                              {isFirstDay && trevor.nextIsBuyBack && trevor.nextPicksNeeded >= 4 && (
-                                <p className="m-0 mb-1.5">
-                                  <span className="text-amber-400">Buy-back strategy:</span>{" "}
-                                  With {trevor.nextPicksNeeded} picks needed, prioritize expendable teams.
-                                  Save deep-run teams for later rounds when you only need 1 pick/day.
-                                </p>
-                              )}
-                              <p className="m-0 text-slate-500 text-[10px]">
-                                Score = 25% win prob + 20% futures + 25% uniqueness + 20% sharp + 10% line value
-                              </p>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Ranked teams table for this day */}
-                  {dayEdge.length > 0 && (
-                    <div className={cardClass}>
-                      <h3 className="m-0 mb-2 text-[10px] text-slate-600">
-                        RANKED TEAMS ({dayEdge.length})
-                      </h3>
-                      <div className="overflow-x-auto">
-                        <div className="grid grid-cols-[24px_1fr_44px_44px_44px_38px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1 text-[9px] text-slate-600 font-bold min-w-[600px]">
-                          <span>#</span>
-                          <span>TEAM</span>
-                          <span>WIN%</span>
-                          <span>SPRD</span>
-                          <span>DEPTH</span>
-                          <span>EST</span>
-                          <span>UNIQ</span>
-                          <span>SHRP%</span>
-                          <span>SYS</span>
-                          <span>SCORE</span>
-                          <span>TIER</span>
-                          <span>ODDS</span>
-                          <span></span>
-                        </div>
-                        {dayEdge.map((t, i) => (
-                          <div
-                            key={t.team}
-                            className="grid grid-cols-[24px_1fr_44px_44px_44px_38px_44px_44px_30px_44px_48px_44px_30px] gap-1 px-1.5 py-1.5 rounded text-[11px] items-center min-w-[600px]"
-                            style={{
-                              background:
-                                dayRecs.some((r) => r.team === t.team)
-                                  ? "#0a1a0a"
-                                  : i < 8
-                                    ? "#0a0f1a"
-                                    : "#080c14",
-                              border:
-                                dayRecs.some((r) => r.team === t.team)
-                                  ? "1px solid #166534"
-                                  : "1px solid transparent",
-                            }}
-                          >
-                            <span
-                              className="font-bold"
-                              style={{
-                                color: dayRecs.some((r) => r.team === t.team) ? "#4ade80" : "#475569",
-                              }}
-                            >
-                              {i + 1}
-                            </span>
-                            <span className="font-semibold text-slate-200">
-                              <span className="flex items-center gap-1">
-                                {t.team}
-                                {t.liveOdds && (
-                                  <span className="inline-block w-1 h-1 rounded-full bg-green-500" title="Live odds" />
-                                )}
-                              </span>
-                              {t.opponent && (
-                                <span className="text-[9px] text-slate-600 font-normal block leading-tight">vs {t.opponent}</span>
-                              )}
-                            </span>
-                            <span
-                              style={{
-                                color:
-                                  t.wp >= 0.8
-                                    ? "#4ade80"
-                                    : t.wp >= 0.5
-                                      ? "#fbbf24"
-                                      : "#f87171",
-                              }}
-                            >
-                              {(t.wp * 100).toFixed(0)}%
-                            </span>
-                            <span
-                              className="text-[10px]"
-                              style={{
-                                color: t.spread !== null
-                                  ? (t.spread <= -10 ? "#4ade80" : t.spread <= -3 ? "#fbbf24" : "#f87171")
-                                  : "#334155",
-                              }}
-                            >
-                              {t.spread !== null ? (t.spread > 0 ? `+${t.spread}` : t.spread) : "-"}
-                            </span>
-                            <span
-                              className="text-[10px]"
-                              style={{
-                                color:
-                                  t.dr >= 0.7
-                                    ? "#f87171"
-                                    : t.dr >= 0.4
-                                      ? "#fbbf24"
-                                      : "#4ade80",
-                              }}
-                            >
-                              {t.dr >= 0.7
-                                ? "DEEP"
-                                : t.dr >= 0.4
-                                  ? "MED"
-                                  : "SHORT"}
-                            </span>
-                            <span
-                              style={{
-                                color:
-                                  t.estPicks >= 5
-                                    ? "#f87171"
-                                    : t.estPicks >= 2
-                                      ? "#fbbf24"
-                                      : "#4ade80",
-                              }}
-                            >
-                              {t.estPicks.toFixed(1)}
-                            </span>
-                            <span
-                              style={{
-                                color:
-                                  t.u >= 0.8
-                                    ? "#4ade80"
-                                    : t.u >= 0.5
-                                      ? "#fbbf24"
-                                      : "#f87171",
-                              }}
-                            >
-                              {(t.u * 100).toFixed(0)}%
-                            </span>
-                            <span
-                              style={{
-                                color: t.sharpMoney !== null
-                                  ? (t.sharpMoney >= 65 ? "#4ade80" : t.sharpMoney >= 50 ? "#fbbf24" : "#f87171")
-                                  : "#334155",
-                              }}
-                            >
-                              {t.sharpMoney !== null ? `${t.sharpMoney}%` : "-"}
-                            </span>
-                            <span
-                              style={{
-                                color: t.systems !== null
-                                  ? (t.systems >= 3 ? "#4ade80" : t.systems >= 1 ? "#fbbf24" : "#f87171")
-                                  : "#334155",
-                              }}
-                            >
-                              {t.systems !== null ? t.systems : "-"}
-                            </span>
-                            <span
-                              className="font-extrabold"
-                              style={{
-                                color:
-                                  t.sc >= 0.7
-                                    ? "#4ade80"
-                                    : t.sc >= 0.5
-                                      ? "#fbbf24"
-                                      : "#94a3b8",
-                              }}
-                            >
-                              {(t.sc * 100).toFixed(0)}
-                            </span>
-                            <TBadge tier={t.tier} />
-                            <span className="text-[9px] text-slate-600">
-                              {t.odds}
-                            </span>
-                            <span
-                              className="text-[12px] text-center"
-                              style={{
-                                color: t.signal === "bull" ? "#4ade80" : t.signal === "bear" ? "#f87171" : "#475569",
-                              }}
-                              title={t.signal === "bull" ? "Sharp + high WP" : t.signal === "bear" ? "Fade signal" : "Neutral"}
-                            >
-                              {t.signal === "bull" ? "\u25b2" : t.signal === "bear" ? "\u25bc" : "\u2013"}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                <>
+              {/* Buy-back decision card */}
+              <div
+                className="rounded-lg p-3.5 mb-3"
+                style={{ background: expectedValue > 0 ? "#0a1a0a" : "#1a0808", border: `1px solid ${expectedValue > 0 ? "#166534" : "#7f1d1d"}` }}
+              >
+                <h3 className="m-0 mb-2 text-[11px]" style={{ color: expectedValue > 0 ? "#4ade80" : "#f87171" }}>
+                  SHOULD YOU BUY BACK? ({expectedValue > 0 ? "YES" : "MARGINAL"})
+                </h3>
+                <div className="text-[11px] text-slate-300 leading-6">
+                  <p className="m-0 mb-1">
+                    <span className="text-slate-500">Cost:</span> ${bbCost} (total invested: ${trevor.money + bbCost})
+                    &middot; <span className="text-slate-500">Pot:</span> ${potSize}
+                    &middot; <span className="text-slate-500">Field:</span> {active.length} players
+                  </p>
+                  <p className="m-0 mb-1">
+                    <span className="text-slate-500">Best 4-pick survival today:</span>{" "}
+                    <strong style={{ color: bestSurvival >= 0.6 ? "#4ade80" : bestSurvival >= 0.4 ? "#fbbf24" : "#f87171" }}>
+                      {(bestSurvival * 100).toFixed(0)}%
+                    </strong>
+                    &middot; <span className="text-slate-500">Est. win pool:</span>{" "}
+                    <strong className="text-slate-200">{(overallWinProb * 100).toFixed(1)}%</strong>
+                  </p>
+                  <p className="m-0 mb-1">
+                    <span className="text-slate-500">Expected value:</span>{" "}
+                    <strong style={{ color: expectedValue > 0 ? "#4ade80" : "#f87171" }}>
+                      {expectedValue > 0 ? "+" : ""}{expectedValue.toFixed(0)} ({expectedValue > 0 ? "worth it" : "negative EV"})
+                    </strong>
+                  </p>
+                  <p className="m-0 text-[10px] text-slate-600">
+                    Key edge: You need 4 picks today but only 1/day after. The field mostly picks chalk &mdash;
+                    your buy-back lets you burn expendable teams now and save deep-run teams for later when differentiation matters most.
+                  </p>
                 </div>
+              </div>
+
+              {/* Your situation */}
+              <div
+                className="rounded-lg p-3.5 mb-3"
+                style={{ background: "#0a1420", border: "1px solid #1e3a5f" }}
+              >
+                <h3 className="m-0 mb-1.5 text-[11px] text-blue-400">
+                  YOUR SITUATION &mdash; SUN 3/22 (LAST BUY-BACK DAY)
+                </h3>
+                <div className="text-[11px] text-slate-300 leading-6">
+                  <p className="m-0 mb-1">
+                    Need <strong className="text-amber-400">{n} picks</strong> to buy back
+                    <span className="text-red-400"> (BB #{trevor.totalBB + 1}/{MAX_BB}, +${BB_COST})</span>
+                    &middot; All {n} must win or you&apos;re out for good
+                  </p>
+                  <p className="m-0 mb-1">
+                    <span className="text-slate-500">Can&apos;t pick ({unavailable.length}):</span>{" "}
+                    <span className="text-red-400">{unavailable.map((t) => t.team).join(", ") || "none"}</span>
+                  </p>
+                  <p className="m-0 mb-1">
+                    <span className="text-slate-500">Available ({available.length}):</span>{" "}
+                    <span className="text-slate-400">{available.map((t) => t.team).join(", ")}</span>
+                  </p>
+                  <p className="m-0">
+                    <span className="text-slate-500">Teams burned ({trevor.usedTeams.size}):</span>{" "}
+                    <span className="text-slate-600">{[...trevor.usedTeams].join(", ")}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Recommended combos */}
+              {uniqueCombos.length > 0 && (
+                <div
+                  className="rounded-lg p-3.5 mb-3"
+                  style={{ background: "#0a1a0a", border: "1px solid #166534" }}
+                >
+                  <h3 className="m-0 mb-2 text-[11px] text-green-400">
+                    RECOMMENDED 4-PICK COMBOS
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {uniqueCombos.map((combo, ci) => (
+                      <div key={ci} className="rounded p-2.5" style={{ background: ci === 0 ? "#0f2a0f" : "#0a0f0a", border: ci === 0 ? "1px solid #22c55e" : "1px solid #1a2030" }}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-green-400 font-bold text-[12px]">
+                            {ci === 0 ? "BEST" : ci === 1 ? "ALT 1" : "ALT 2"}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            Survival: <strong style={{ color: combo.survProb >= 0.6 ? "#4ade80" : combo.survProb >= 0.4 ? "#fbbf24" : "#f87171" }}>
+                              {(combo.survProb * 100).toFixed(0)}%
+                            </strong>
+                            &middot; Avg uniqueness: {(combo.avgUniq * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mb-1.5">
+                          {combo.picks.map((t) => (
+                            <span
+                              key={t.team}
+                              className="px-2 py-1 rounded text-[11px] font-semibold"
+                              style={{
+                                background: t.dr >= 0.7 ? "#1a0a08" : "#0a1a0a",
+                                border: `1px solid ${t.dr >= 0.7 ? "#854d0e" : "#166534"}`,
+                                color: t.dr >= 0.7 ? "#fbbf24" : "#4ade80",
+                              }}
+                            >
+                              {t.team} ({(t.wp * 100).toFixed(0)}%)
+                              <span className="text-[9px] ml-1" style={{ color: t.dr >= 0.7 ? "#92400e" : "#15803d" }}>
+                                {t.dr >= 0.7 ? "DEEP" : t.dr >= 0.4 ? "MED" : "BURN"}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          Saves for later: {combo.savedDeep.length > 0 ? combo.savedDeep.map((t) => t.team).join(", ") : "none"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Strategic insights */}
+              {available.length > 0 && (
+                <div
+                  className="rounded-lg p-3.5 mb-3"
+                  style={{ background: "#140a24", border: "1px solid #7c3aed" }}
+                >
+                  <h3 className="m-0 mb-1.5 text-[11px] text-violet-400">
+                    STRATEGY INSIGHTS
+                  </h3>
+                  <div className="text-[11px] text-slate-300 leading-6">
+                    {(() => {
+                      const burnable = available.filter((t) => t.dr < 0.4 && t.wp >= 0.6);
+                      const saveable = available.filter((t) => t.dr >= 0.7);
+                      const contrarian = available.filter((t) => t.wp >= 0.55 && t.u >= 0.7).sort((a, b) => b.u - a.u);
+                      const upsetBait = available.filter((t) => t.wp >= 0.7 && t.dr >= 0.7);
+                      const chalky = available.filter((t) => t.estPicks >= 4).sort((a, b) => b.estPicks - a.estPicks);
+                      return (
+                        <>
+                          {burnable.length > 0 && (
+                            <p className="m-0 mb-1.5">
+                              <span className="text-green-400">Burn now:</span>{" "}
+                              {burnable.map((t) => `${t.team} (${(t.wp * 100).toFixed(0)}%, SHORT depth)`).join(", ")}.
+                              {" "}These teams won&apos;t go deep &mdash; use them today while they&apos;re still alive.
+                            </p>
+                          )}
+                          {saveable.length > 0 && (
+                            <p className="m-0 mb-1.5">
+                              <span className="text-amber-400">Save for later:</span>{" "}
+                              {saveable.map((t) => `${t.team} (${t.odds})`).join(", ")}.
+                              {" "}Deep-run contenders &mdash; save for days when you only need 1 pick and need differentiation.
+                            </p>
+                          )}
+                          {upsetBait.length > 0 && (
+                            <p className="m-0 mb-1.5">
+                              <span className="text-cyan-400">Contrarian play (use deep teams NOW):</span>{" "}
+                              {upsetBait.map((t) => `${t.team} (${(t.wp * 100).toFixed(0)}%)`).join(", ")}.
+                              {" "}If a top seed loses in Sweet 16, everyone who saved them loses that option. You&apos;d already have banked the win.
+                            </p>
+                          )}
+                          {contrarian.length > 0 && (
+                            <p className="m-0 mb-1.5">
+                              <span className="text-emerald-400">High-uniqueness picks:</span>{" "}
+                              {contrarian.map((t) => `${t.team} (${(t.u * 100).toFixed(0)}% unique, ~${t.estPicks.toFixed(1)} est picks)`).join(", ")}.
+                              {" "}Few opponents likely to pick these &mdash; differentiation edge.
+                            </p>
+                          )}
+                          {chalky.length > 0 && (
+                            <p className="m-0 mb-1.5">
+                              <span className="text-amber-400">Chalk the field is on:</span>{" "}
+                              {chalky.map((t) => `${t.team} (~${t.estPicks.toFixed(1)} est picks)`).join(", ")}.
+                              {" "}If one loses, many opponents go down &mdash; but picking these doesn&apos;t differentiate you.
+                            </p>
+                          )}
+                          <p className="m-0 mb-1.5">
+                            <span className="text-blue-400">Your edge:</span>{" "}
+                            You need 4 picks today but only 1/day after Sunday. Most opponents have 1 pick.
+                            {" "}Burn expendable teams now, save elite teams for when the field thins and you need to separate.
+                          </p>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Full team rankings */}
+              {available.length > 0 && (
+                <div className={cardClass}>
+                  <h3 className="m-0 mb-2 text-[10px] text-slate-600">
+                    ALL AVAILABLE TEAMS ({available.length})
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <div className="grid grid-cols-[24px_1fr_44px_44px_44px_38px_44px_44px_30px] gap-1 px-1.5 py-1 text-[9px] text-slate-600 font-bold min-w-[480px]">
+                      <span>#</span>
+                      <span>TEAM</span>
+                      <span>WIN%</span>
+                      <span>SPRD</span>
+                      <span>DEPTH</span>
+                      <span>EST</span>
+                      <span>UNIQ</span>
+                      <span>SCORE</span>
+                      <span></span>
+                    </div>
+                    {available.sort((a, b) => b.sc - a.sc).map((t, i) => {
+                      const isRec = uniqueCombos[0]?.picks.some((p) => p.team === t.team);
+                      return (
+                      <div
+                        key={t.team}
+                        className="grid grid-cols-[24px_1fr_44px_44px_44px_38px_44px_44px_30px] gap-1 px-1.5 py-1.5 rounded text-[11px] items-center min-w-[480px]"
+                        style={{
+                          background: isRec ? "#0a1a0a" : "#0a0f1a",
+                          border: isRec ? "1px solid #166534" : "1px solid transparent",
+                        }}
+                      >
+                        <span className="font-bold" style={{ color: isRec ? "#4ade80" : "#475569" }}>
+                          {i + 1}
+                        </span>
+                        <span className="font-semibold text-slate-200">
+                          <span className="flex items-center gap-1">
+                            {t.team}
+                            {t.liveOdds && <span className="inline-block w-1 h-1 rounded-full bg-green-500" title="Live odds" />}
+                          </span>
+                          {t.opponent && <span className="text-[9px] text-slate-600 font-normal block leading-tight">vs {t.opponent}</span>}
+                        </span>
+                        <span style={{ color: t.wp >= 0.8 ? "#4ade80" : t.wp >= 0.5 ? "#fbbf24" : "#f87171" }}>
+                          {(t.wp * 100).toFixed(0)}%
+                        </span>
+                        <span className="text-[10px]" style={{ color: t.spread !== null ? (t.spread <= -10 ? "#4ade80" : t.spread <= -3 ? "#fbbf24" : "#f87171") : "#334155" }}>
+                          {t.spread !== null ? (t.spread > 0 ? `+${t.spread}` : t.spread) : "-"}
+                        </span>
+                        <span className="text-[10px]" style={{ color: t.dr >= 0.7 ? "#f87171" : t.dr >= 0.4 ? "#fbbf24" : "#4ade80" }}>
+                          {t.dr >= 0.7 ? "DEEP" : t.dr >= 0.4 ? "MED" : "BURN"}
+                        </span>
+                        <span style={{ color: t.estPicks >= 5 ? "#f87171" : t.estPicks >= 2 ? "#fbbf24" : "#4ade80" }}>
+                          {t.estPicks.toFixed(1)}
+                        </span>
+                        <span style={{ color: t.u >= 0.8 ? "#4ade80" : t.u >= 0.5 ? "#fbbf24" : "#f87171" }}>
+                          {(t.u * 100).toFixed(0)}%
+                        </span>
+                        <span className="font-extrabold" style={{ color: t.sc >= 0.7 ? "#4ade80" : t.sc >= 0.5 ? "#fbbf24" : "#94a3b8" }}>
+                          {(t.sc * 100).toFixed(0)}
+                        </span>
+                        <span className="text-[12px] text-center" style={{ color: t.signal === "bull" ? "#4ade80" : t.signal === "bear" ? "#f87171" : "#475569" }}>
+                          {t.signal === "bull" ? "\u25b2" : t.signal === "bear" ? "\u25bc" : "\u2013"}
+                        </span>
+                      </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              </>
               );
-            })}
+            })()}
           </div>
         )}
 
