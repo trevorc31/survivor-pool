@@ -188,17 +188,32 @@ export const FUT: Record<string, { dr: number; t: number; o: string }> = {
   Texas: { dr: 0.30, t: 4, o: "+12000" },
 };
 
+// Round of 32 Sunday win probabilities (Day 4 — 3/22)
 export const WP: Record<string, number> = {
-  Kentucky: 1, "Texas Tech": 1, Virginia: 1, "Santa Clara": 0,
-  "Iowa State": 0.99, Alabama: 0.92, "Utah State": 0.52,
-  Tennessee: 0.88, "Miami (OH)": 0.12,
-  Iowa: 0.58, "St. John's": 0.91, UCLA: 0.85, Purdue: 0.97,
-  Florida: 0.98, Kansas: 0.97, UConn: 0.93, "Miami (FL)": 0.72,
-  Michigan: 0.82, "St. Louis": 0.18, "Michigan State": 0.68,
-  Louisville: 0.32, Duke: 0.88, TCU: 0.12, Houston: 0.75,
-  "Texas A&M": 0.25, Gonzaga: 0.70, Nebraska: 0.62,
-  Vanderbilt: 0.38, Illinois: 0.72, VCU: 0.28, Arkansas: 0.78,
-  "High Point": 0.22, Texas: 0.30, Arizona: 0.92,
+  // (2) Purdue vs (7) Miami FL
+  Purdue: 0.72, "Miami (FL)": 0.28,
+  // (2) Iowa State vs (7) Kentucky
+  "Iowa State": 0.62, Kentucky: 0.38,
+  // (4) Kansas vs (5) St. John's
+  Kansas: 0.55, "St. John's": 0.45,
+  // (3) Virginia vs (6) Tennessee
+  Virginia: 0.52, Tennessee: 0.48,
+  // (1) Florida vs (9) Iowa
+  Florida: 0.82, Iowa: 0.18,
+  // (1) Arizona vs (9) Utah State
+  Arizona: 0.80, "Utah State": 0.20,
+  // (2) UConn vs (7) UCLA
+  UConn: 0.65, UCLA: 0.35,
+  // (4) Alabama vs (5) Texas Tech
+  Alabama: 0.55, "Texas Tech": 0.45,
+  // Teams eliminated from tournament (kept for reference)
+  "Santa Clara": 0, "Miami (OH)": 0, "St. Louis": 0, Louisville: 0,
+  TCU: 0, "Texas A&M": 0, Gonzaga: 0, VCU: 0, Vanderbilt: 0,
+  "High Point": 0, Wisconsin: 0, "North Carolina": 0, BYU: 0,
+  "Ohio State": 0, "Saint Mary's": 0, Georgia: 0,
+  // Saturday winners (not playing Sunday)
+  Michigan: 0, "Michigan State": 0, Duke: 0, Houston: 0,
+  Texas: 0, Illinois: 0, Nebraska: 0, Arkansas: 0,
 };
 
 // Predict how many opponents will pick each team today

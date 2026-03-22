@@ -1281,41 +1281,74 @@ export default function App() {
               const unavailable = dayEdge.filter((t) => trevor.usedTeams.has(t.team));
               const n = trevor.nextPicksNeeded || 4;
 
+              // Build game matchup map: team → opponent (can't pick both sides)
+              const gameOpponents: Record<string, string> = {};
+              if (sundayDay) {
+                for (const g of sundayDay.games) {
+                  if (g.teams.length === 2) {
+                    gameOpponents[g.teams[0]] = g.teams[1];
+                    gameOpponents[g.teams[1]] = g.teams[0];
+                  }
+                }
+              }
+
+              // Helper: check if a pick set has game conflicts
+              const hasConflict = (picks: typeof available) => {
+                const teams = new Set(picks.map((p) => p.team));
+                return picks.some((p) => {
+                  const opp = gameOpponents[p.team];
+                  return opp && teams.has(opp);
+                });
+              };
+
+              // Greedy pick: take best by score, skipping game conflicts
+              const greedyPick = (sorted: typeof available, count: number) => {
+                const result: typeof available = [];
+                const usedGames = new Set<string>();
+                for (const t of sorted) {
+                  if (result.length >= count) break;
+                  const opp = gameOpponents[t.team];
+                  const gameKey = [t.team, opp].sort().join("|");
+                  if (usedGames.has(gameKey)) continue;
+                  result.push(t);
+                  if (opp) usedGames.add(gameKey);
+                }
+                return result;
+              };
+
               // Build optimal combos of n picks from available teams
-              // Score combos by: combined survival prob × uniqueness bonus
               const combos: { picks: typeof available; survProb: number; avgUniq: number; comboScore: number; savedDeep: typeof available }[] = [];
               const deepTeams = available.filter((t) => t.dr >= 0.7);
               const allAvail = available.filter((t) => t.wp > 0);
 
               if (allAvail.length >= n) {
-                // Generate top combos using greedy approach
-                // Strategy 1: Max survival (pick highest WP)
+                // Strategy 1: Max survival (pick highest WP, no game conflicts)
                 const bySurvival = [...allAvail].sort((a, b) => b.wp - a.wp);
-                const s1 = bySurvival.slice(0, n);
+                const s1 = greedyPick(bySurvival, n);
 
                 // Strategy 2: Burn expendable, save deep (prefer low depth teams)
                 const byBurnFirst = [...allAvail]
-                  .filter((t) => t.wp >= 0.5)
+                  .filter((t) => t.wp >= 0.4)
                   .sort((a, b) => {
-                    // prefer expendable (low depth) with high WP
                     const aScore = a.wp * (1 - a.dr * 0.5);
                     const bScore = b.wp * (1 - b.dr * 0.5);
                     return bScore - aScore;
                   });
-                const s2 = byBurnFirst.slice(0, n);
+                const s2 = greedyPick(byBurnFirst, n);
 
                 // Strategy 3: Contrarian (maximize uniqueness while surviving)
                 const byContrarian = [...allAvail]
-                  .filter((t) => t.wp >= 0.45)
+                  .filter((t) => t.wp >= 0.35)
                   .sort((a, b) => {
                     const aScore = a.u * 0.5 + a.wp * 0.3 + (1 - a.dr) * 0.2;
                     const bScore = b.u * 0.5 + b.wp * 0.3 + (1 - b.dr) * 0.2;
                     return bScore - aScore;
                   });
-                const s3 = byContrarian.slice(0, n);
+                const s3 = greedyPick(byContrarian, n);
 
                 [s1, s2, s3].forEach((picks) => {
                   if (picks.length < n) return;
+                  if (hasConflict(picks)) return; // safety check
                   const survProb = picks.reduce((p, t) => p * t.wp, 1);
                   const avgUniq = picks.reduce((s, t) => s + t.u, 0) / picks.length;
                   const savedDeep = deepTeams.filter((dt) => !picks.some((p) => p.team === dt.team));
