@@ -22,6 +22,12 @@ const DAY_DATES: Record<string, string> = {
   "2026-03-30": "day12",
 };
 
+// Teams playing each day (only show these in game status)
+const DAY_TEAMS: Record<string, Set<string>> = {
+  day3: new Set(["Michigan", "St. Louis", "Michigan State", "Louisville", "Duke", "TCU", "Houston", "Texas A&M", "Gonzaga", "Texas", "Illinois", "VCU", "Nebraska", "Vanderbilt", "Arkansas", "High Point"]),
+  day4: new Set(["Purdue", "Miami (FL)", "Iowa State", "Kentucky", "Kansas", "St. John's", "Virginia", "Tennessee", "Florida", "Iowa", "Arizona", "Utah State", "UConn", "UCLA", "Alabama", "Texas Tech"]),
+};
+
 function getTodayET(): string {
   return new Date().toLocaleDateString("en-CA", {
     timeZone: "America/New_York",
@@ -158,10 +164,18 @@ export async function GET() {
           mapEspnTeamName(teamB.team.shortDisplayName) ||
           mapEspnTeamName(teamB.team.displayName);
 
-        // Filter: only include games where at least one team is in our pool
+        // Filter: only include games where at least one team is scheduled for today
         if (!nameA && !nameB) continue;
-        if (nameA && !APP_TEAMS.has(nameA) && nameB && !APP_TEAMS.has(nameB))
-          continue;
+        const todayTeams = DAY_TEAMS[activeDayId];
+        if (todayTeams) {
+          const aInDay = nameA && todayTeams.has(nameA);
+          const bInDay = nameB && todayTeams.has(nameB);
+          if (!aInDay && !bInDay) continue;
+        } else {
+          // Fallback to APP_TEAMS for days without explicit team list
+          if (nameA && !APP_TEAMS.has(nameA) && nameB && !APP_TEAMS.has(nameB))
+            continue;
+        }
 
         const statusName = event.status.type.name;
 
