@@ -82,12 +82,21 @@ export function computePlayer(
       const eIdx = days.findIndex((d) => d.id === e.dayId);
       return eIdx > lastDayIdx;
     });
-    if (!hasNext && !nextDay) isPermElim = true;
-  }
-
-  if (p.history.length === 1 && dayResults.day1 === "eliminated") {
-    const hasDay2 = p.history.some((e) => e.dayId === "day2");
-    if (!hasDay2) isPermElim = true;
+    if (!hasNext) {
+      if (!nextDay) {
+        // No more days in the tournament
+        isPermElim = true;
+      } else {
+        // Check if the next day already has final results (won/lost, not just scheduled/in_progress)
+        const nextDayResults = teamResults[nextDay.id] || {};
+        const hasFinalResults = Object.values(nextDayResults).some(
+          (r) => r === "won" || r === "lost"
+        );
+        if (hasFinalResults) isPermElim = true;
+        // Also check if they've used all buy-backs
+        if (totalBB >= MAX_BB) isPermElim = true;
+      }
+    }
   }
 
   const seen = new Set<string>();

@@ -14,6 +14,13 @@
       "Iowa": "won", "St. John's": "won", "UCLA": "won",
       "Purdue": "won", "Florida": "won", "Kansas": "won",
       "UConn": "won", "Miami (FL)": "won"
+    },
+    "day3": {
+      "Michigan State": "won", "St. Louis": "lost", "Louisville": "lost",
+      "Duke": "won", "Houston": "won", "Texas A&M": "lost",
+      "Gonzaga": "lost", "Texas": "won", "Illinois": "won", "VCU": "lost",
+      "Nebraska": "won", "Vanderbilt": "lost", "Arkansas": "won", "High Point": "lost",
+      "Michigan": "won", "TCU": "lost"
     }
   },
   "scores": {
@@ -27,6 +34,16 @@
       "UCLA": "75-71 vs UCF", "Purdue": "104-71 vs Queens",
       "Florida": "114-55 vs Prairie View", "Kansas": "68-60 vs Cal Baptist",
       "UConn": "82-71 vs Furman", "Miami (FL)": "80-66 vs Missouri"
+    },
+    "day3": {
+      "Michigan": "95-72 vs St. Louis", "St. Louis": "72-95 vs Michigan",
+      "Michigan State": "77-69 vs Louisville", "Louisville": "69-77 vs Michigan State",
+      "Duke": "81-58 vs TCU", "TCU": "58-81 vs Duke",
+      "Houston": "88-57 vs Texas A&M", "Texas A&M": "57-88 vs Houston",
+      "Texas": "74-68 vs Gonzaga", "Gonzaga": "68-74 vs Texas",
+      "Illinois": "76-55 vs VCU", "VCU": "55-76 vs Illinois",
+      "Nebraska": "74-72 vs Vanderbilt", "Vanderbilt": "72-74 vs Nebraska",
+      "Arkansas": "94-88 vs High Point", "High Point": "88-94 vs Arkansas"
     }
   },
   "days": [
