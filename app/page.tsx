@@ -997,13 +997,20 @@ export default function App() {
         )}
 
         {/* ═══ USED TEAMS ═══ */}
-        {tab === "Used Teams" && (
+        {tab === "Used Teams" && (() => {
+          // Teams eliminated from the tournament (lost in any round)
+          const elimTeams = new Set<string>();
+          Object.values(teamResults).forEach((dayR) => {
+            if (dayR) Object.entries(dayR).forEach(([t, r]) => { if (r === "lost") elimTeams.add(t); });
+          });
+          return (
           <div>
             <h2 className="text-[15px] text-slate-50 mb-1">
               Used Teams Tracker
             </h2>
             <p className="text-[11px] text-slate-500 mb-3.5">
               Cannot pick a team you&apos;ve already used.
+              <span className="text-red-400 ml-1.5">Red = eliminated from tournament</span>
             </p>
             <div className={cardClass}>
               <h3 className="m-0 mb-2.5 text-[11px] text-slate-500 tracking-wider">
@@ -1038,17 +1045,26 @@ export default function App() {
                       {p.usedTeams.size}
                     </span>
                     <div className="flex flex-wrap gap-1">
-                      {p.allPicks.map((pk, j) => (
+                      {p.allPicks.map((pk, j) => {
+                        const isElimFromTourney = elimTeams.has(pk.team);
+                        return (
                         <span
                           key={j}
-                          className="inline-flex items-center gap-1 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-xl text-[10px] text-slate-300"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-[10px]"
+                          style={{
+                            background: isElimFromTourney ? "#1a0808" : "#0f172a",
+                            border: `1px solid ${isElimFromTourney ? "#7f1d1d" : "#1e293b"}`,
+                            color: isElimFromTourney ? "#f87171" : "#cbd5e1",
+                            textDecoration: isElimFromTourney ? "line-through" : "none",
+                          }}
                         >
                           {pk.team}
-                          <span className="text-[8px] text-slate-600">
-                            {pk.dayId === "day1" ? "D1" : "D2"}
+                          <span className="text-[8px]" style={{ color: isElimFromTourney ? "#991b1b" : "#475569" }}>
+                            {pk.dayId.replace("day", "D")}
                           </span>
                         </span>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -1087,13 +1103,25 @@ export default function App() {
               <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-1.5">
                 {Object.entries(teamMap)
                   .sort((a, b) => b[1].length - a[1].length)
-                  .map(([team, pls]) => (
+                  .map(([team, pls]) => {
+                    const isElimFromTourney = elimTeams.has(team);
+                    return (
                     <div
                       key={team}
-                      className="bg-[#0a0f1a] border border-[#1a2030] rounded-md px-2.5 py-2"
+                      className="rounded-md px-2.5 py-2"
+                      style={{
+                        background: isElimFromTourney ? "#0a0808" : "#0a0f1a",
+                        border: `1px solid ${isElimFromTourney ? "#3b1111" : "#1a2030"}`,
+                      }}
                     >
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-xs font-bold text-slate-200">
+                        <span
+                          className="text-xs font-bold"
+                          style={{
+                            color: isElimFromTourney ? "#f87171" : "#e2e8f0",
+                            textDecoration: isElimFromTourney ? "line-through" : "none",
+                          }}
+                        >
                           {team}
                         </span>
                         <span
@@ -1114,11 +1142,13 @@ export default function App() {
                         {pls.join(", ")}
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ═══ SCHEDULE ═══ */}
         {tab === "Schedule" && (
