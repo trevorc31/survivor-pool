@@ -20,6 +20,11 @@ import resultsData from "@/data/results.json";
 
 const PERSONAL_PW = "trevorNOVA";
 
+// Players who have paid — update this set as payments come in
+const PAID_PLAYERS = new Set<string>([
+  // Add player names here as they pay, e.g. "Trevor", "Rob"
+]);
+
 const PLAYERS: PlayerRaw[] = playersData as PlayerRaw[];
 const INITIAL_TEAM_RESULTS: Record<string, Record<string, string>> =
   resultsData.teamResults;
@@ -29,33 +34,25 @@ const DAYS: DayConfig[] = resultsData.days as DayConfig[];
 // Schedule data — used by both Schedule tab and Edge Lab
 const SCHEDULE_DAYS = [
   {
-    dayId: "day3",
-    label: "SAT 3/21 — Round of 32",
-    sub: "Advancing: 1 pick · Buy-back: 4 picks",
+    dayId: "day5",
+    label: "THU 3/26 — Sweet 16",
+    sub: "1 pick · No more buy-backs",
     games: [
-      { t: "12:10 PM", m: "(1) Michigan vs (9) St. Louis", teams: ["Michigan", "St. Louis"] },
-      { t: "2:45 PM", m: "(3) Michigan State vs (6) Louisville", teams: ["Michigan State", "Louisville"] },
-      { t: "5:15 PM", m: "(1) Duke vs (9) TCU", teams: ["Duke", "TCU"] },
-      { t: "6:10 PM", m: "(2) Houston vs (10) Texas A&M", teams: ["Houston", "Texas A&M"] },
-      { t: "7:10 PM", m: "(3) Gonzaga vs (11) Texas", teams: ["Gonzaga", "Texas"] },
-      { t: "7:50 PM", m: "(3) Illinois vs (11) VCU", teams: ["Illinois", "VCU"] },
-      { t: "8:45 PM", m: "(4) Nebraska vs (5) Vanderbilt", teams: ["Nebraska", "Vanderbilt"] },
-      { t: "9:45 PM", m: "(4) Arkansas vs (12) High Point", teams: ["Arkansas", "High Point"] },
+      { t: "7:10 PM", m: "(2) Purdue vs (11) Texas", teams: ["Purdue", "Texas"] },
+      { t: "7:30 PM", m: "(4) Nebraska vs (9) Iowa", teams: ["Nebraska", "Iowa"] },
+      { t: "9:45 PM", m: "(1) Arizona vs (4) Arkansas", teams: ["Arizona", "Arkansas"] },
+      { t: "10:05 PM", m: "(2) Houston vs (3) Illinois", teams: ["Houston", "Illinois"] },
     ],
   },
   {
-    dayId: "day4",
-    label: "SUN 3/22 — Round of 32",
-    sub: "Advancing: 1 pick · Buy-back: 4 picks · ⚠ LAST BUY-BACK DAY",
+    dayId: "day6",
+    label: "FRI 3/27 — Sweet 16",
+    sub: "1 pick · No more buy-backs",
     games: [
-      { t: "12:10 PM", m: "(2) Purdue vs (7) Miami (FL)", teams: ["Purdue", "Miami (FL)"] },
-      { t: "2:45 PM", m: "(2) Iowa State vs (7) Kentucky", teams: ["Iowa State", "Kentucky"] },
-      { t: "5:15 PM", m: "(4) Kansas vs (5) St. John's", teams: ["Kansas", "St. John's"] },
-      { t: "6:10 PM", m: "(3) Virginia vs (6) Tennessee", teams: ["Virginia", "Tennessee"] },
-      { t: "7:10 PM", m: "(1) Florida vs (9) Iowa", teams: ["Florida", "Iowa"] },
-      { t: "7:50 PM", m: "(1) Arizona vs (9) Utah State", teams: ["Arizona", "Utah State"] },
-      { t: "8:45 PM", m: "(2) UConn vs (7) UCLA", teams: ["UConn", "UCLA"] },
-      { t: "9:45 PM", m: "(4) Alabama vs (5) Texas Tech", teams: ["Alabama", "Texas Tech"] },
+      { t: "7:10 PM", m: "(1) Duke vs (5) St. John's", teams: ["Duke", "St. John's"] },
+      { t: "7:35 PM", m: "(1) Michigan vs (4) Alabama", teams: ["Michigan", "Alabama"] },
+      { t: "9:45 PM", m: "(2) UConn vs (3) Michigan State", teams: ["UConn", "Michigan State"] },
+      { t: "10:10 PM", m: "(2) Iowa State vs (6) Tennessee", teams: ["Iowa State", "Tennessee"] },
     ],
   },
 ];
@@ -143,10 +140,10 @@ function TBadge({ tier }: { tier: number }) {
 }
 
 // ── Row style helper ──
-function rowStyle(hl: boolean, dn: boolean, alive: boolean = false) {
+function rowStyle(hl: boolean, dn: boolean, wonToday: boolean = false) {
   return {
-    background: dn ? "#1a0808" : alive ? "#03160a" : hl ? "#140a24" : "#0a0f1a",
-    border: `1px solid ${dn ? "#7f1d1d" : alive ? "#166534" : hl ? "#7c3aed" : "#1a2030"}`,
+    background: dn ? "#1a0808" : wonToday ? "#03160a" : hl ? "#140a24" : "#0a0f1a",
+    border: `1px solid ${dn ? "#7f1d1d" : wonToday ? "#166534" : hl ? "#7c3aed" : "#1a2030"}`,
   };
 }
 
@@ -227,24 +224,26 @@ export default function App() {
   const TABS = isPersonal
     ? [
         "Dashboard",
-        "Day 4 (Live)",
+        "Day 5 (3/26)",
         "Used Teams",
         "Schedule",
         "Edge Lab",
         "Money",
-        "Day 1",
-        "Day 2",
-        "Day 3",
+        "Day 1 (3/19)",
+        "Day 2 (3/20)",
+        "Day 3 (3/21)",
+        "Day 4 (3/22)",
       ]
     : [
         "Dashboard",
-        "Day 4 (Live)",
+        "Day 5 (3/26)",
         "Used Teams",
         "Schedule",
         "Money",
-        "Day 1",
-        "Day 2",
-        "Day 3",
+        "Day 1 (3/19)",
+        "Day 2 (3/20)",
+        "Day 3 (3/21)",
+        "Day 4 (3/22)",
       ];
 
   const players = useMemo(
@@ -293,6 +292,17 @@ export default function App() {
     active.forEach((p) => {
       const d4 = p.history.find((e) => e.dayId === "day4");
       d4?.picks.forEach((t) => {
+        f[t] = (f[t] || 0) + 1;
+      });
+    });
+    return Object.entries(f).sort((a, b) => b[1] - a[1]);
+  }, [active]);
+
+  const day5Freq = useMemo(() => {
+    const f: Record<string, number> = {};
+    active.forEach((p) => {
+      const d5 = p.history.find((e) => e.dayId === "day5");
+      d5?.picks.forEach((t) => {
         f[t] = (f[t] || 0) + 1;
       });
     });
@@ -467,6 +477,7 @@ export default function App() {
   const getD2Result = (t: string) => teamResults.day2?.[t] || "pending";
   const getD3Result = (t: string) => teamResults.day3?.[t] || "pending";
   const getD4Result = (t: string) => teamResults.day4?.[t] || "pending";
+  const getD5Result = (t: string) => teamResults.day5?.[t] || "pending";
 
   return (
     <div className="font-mono bg-[#080c14] text-slate-200 min-h-screen">
@@ -497,8 +508,8 @@ export default function App() {
         </div>
         <p className="mt-0.5 text-[11px] text-slate-600">
           {active.length} alive &middot;{" "}
-          {players.filter((p) => p.isPermElim).length} out &middot; Day 4 Sun
-          3/22 &middot; Pot: ${pot}
+          {players.filter((p) => p.isPermElim).length} out &middot; Day 5 Thu
+          3/26 &middot; Pot: ${pot}
           {lastFetched && (
             <span className="ml-2">
               &middot;{" "}
@@ -540,7 +551,7 @@ export default function App() {
                 style={{
                   background:
                     "linear-gradient(135deg, #140a24, #0f1520)",
-                  border: "1px solid #7c3aed",
+                  border: `1px solid ${trevor.isPermElim ? "#7f1d1d" : "#7c3aed"}`,
                 }}
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -554,38 +565,22 @@ export default function App() {
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-400 mb-1.5">
-                  Day 1: BB#1 &middot; Day 2: BB#2 &middot; Day 3: Gonzaga &#10007; &rarr; Eliminated
+                  D1: BB#1 &middot; D2: BB#2 &middot; D3: BB#3 &middot; D4: Florida &#10007; &rarr; Out (max BB used)
                 </div>
-                {trevor.nextPicksNeeded > 0 ? (
-                  <div className="text-[11px] text-amber-400 font-semibold">
-                    {trevor.nextIsBuyBack
-                      ? `Today: Buy back in (BB ${trevor.totalBB + 1}/${MAX_BB}, +$${BB_COST}) with ${trevor.nextPicksNeeded} picks — LAST BUY-BACK DAY`
-                      : `Today: Need ${trevor.nextPicksNeeded} pick${trevor.nextPicksNeeded !== 1 ? "s" : ""}`}
-                  </div>
-                ) : trevor.isPermElim ? (
-                  <div className="text-[11px] text-red-500 font-semibold">
-                    Eliminated &mdash; no more buy-backs available.
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {trevor.history
-                      .find((e) => e.dayId === "day4")
-                      ?.picks.map((t) => (
-                        <Pill key={t} team={t} result={getD4Result(t)} />
-                      ))}
-                  </div>
-                )}
+                <div className="text-[11px] text-red-500 font-semibold">
+                  Eliminated &mdash; used all 3 buy-backs. Better luck next year.
+                </div>
               </div>
             )}
 
-            {day4Freq.length > 0 && (
+            {day5Freq.length > 0 && (
               <div className={cardClass}>
                 <h3 className="m-0 mb-2 text-[11px] text-slate-500 tracking-wider">
-                  DAY 4 TEAM POPULARITY
+                  DAY 5 TEAM POPULARITY
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
-                  {day4Freq.map(([t, c]) => {
-                    const r = getD4Result(t);
+                  {day5Freq.map(([t, c]) => {
+                    const r = getD5Result(t);
                     return (
                       <div
                         key={t}
@@ -637,20 +632,26 @@ export default function App() {
 
             <div className={cardClass}>
               <h3 className="m-0 mb-2 text-[11px] text-slate-500 tracking-wider">
-                ALL PARTICIPANTS &mdash; DAY 4
+                ALL PARTICIPANTS &mdash; DAY 5
               </h3>
               <div className="flex flex-col gap-1">
-                {players.map((p, i) => {
-                  const d4 = p.history.find((e) => e.dayId === "day4");
+                {[...players].sort((a, b) => {
+                  if (a.isPermElim && !b.isPermElim) return 1;
+                  if (!a.isPermElim && b.isPermElim) return -1;
+                  return 0;
+                }).map((p, i) => {
+                  const d5 = p.history.find((e) => e.dayId === "day5");
                   const st = p.currentStatus;
+                  const d5Results = d5?.picks.map((t) => getD5Result(t)) || [];
+                  const allWonToday = d5 && d5Results.length > 0 && d5Results.every((r) => r === "won");
                   return (
                     <div
                       key={i}
                       className="flex items-center gap-2 px-2.5 py-2 rounded-md flex-wrap"
                       style={rowStyle(
                         isPersonal && p.me,
-                        st === "eliminated" || st === "out",
-                        st === "survived"
+                        st === "out",
+                        !!allWonToday
                       )}
                     >
                       <span
@@ -665,7 +666,7 @@ export default function App() {
                         {p.n}
                       </span>
                       <Badge type={st} />
-                      {p.totalBB > 0 && (
+                      {p.totalBB > 0 && !p.isPermElim && (
                         <span className="text-[9px] text-amber-400 bg-[#3b2f08] px-1.5 py-px rounded">
                           BB&times;{p.totalBB}
                         </span>
@@ -675,21 +676,20 @@ export default function App() {
                           &#9888; DUPE: {p.dupes.join(",")}
                         </span>
                       )}
-                      {p.nextPicksNeeded > 0 && !d4 && (
+                      {p.nextPicksNeeded > 0 && !d5 && !p.isPermElim && (
                         <span className="text-[9px] text-blue-400 bg-[#1e2a4a] px-1.5 py-px rounded">
                           Need {p.nextPicksNeeded} pick{p.nextPicksNeeded !== 1 ? "s" : ""}
-                          {p.nextIsBuyBack ? " (BB)" : ""}
                         </span>
                       )}
                       <div className="flex flex-wrap gap-1 ml-auto">
-                        {d4?.picks.map((t) => (
+                        {d5?.picks.map((t) => (
                           <Pill
                             key={t}
                             team={t}
-                            result={getD4Result(t)}
+                            result={getD5Result(t)}
                           />
                         ))}
-                        {!d4 && !p.isPermElim && (
+                        {!d5 && !p.isPermElim && (
                           <span className="text-[10px] text-slate-600">
                             No picks yet
                           </span>
@@ -709,7 +709,7 @@ export default function App() {
         )}
 
         {/* ═══ DAY 1 ═══ */}
-        {tab === "Day 1" && (
+        {tab === "Day 1 (3/19)" && (
           <div>
             <h2 className="text-[15px] text-slate-50 mb-1">
               Day 1 &mdash; Thursday 3/19
@@ -765,7 +765,7 @@ export default function App() {
         )}
 
         {/* ═══ DAY 2 ═══ */}
-        {tab === "Day 2" && (
+        {tab === "Day 2 (3/20)" && (
           <div>
             <h2 className="text-[15px] text-slate-50 mb-1">
               Day 2 &mdash; Friday 3/20
@@ -825,7 +825,7 @@ export default function App() {
 
         {/* ═══ DAY 3 LIVE ═══ */}
         {/* ═══ DAY 3 ═══ */}
-        {tab === "Day 3" && (
+        {tab === "Day 3 (3/21)" && (
           <div>
             <h2 className="text-[15px] text-slate-50 mb-1">
               Day 3 &mdash; Saturday 3/21
@@ -883,23 +883,77 @@ export default function App() {
           </div>
         )}
 
-        {/* ═══ DAY 4 LIVE ═══ */}
-        {tab === "Day 4 (Live)" && (
+        {/* ═══ DAY 4 ═══ */}
+        {tab === "Day 4 (3/22)" && (
           <div>
             <h2 className="text-[15px] text-slate-50 mb-1">
-              Day 4 &mdash; Sunday 3/22 (TODAY)
+              Day 4 &mdash; Sunday 3/22
             </h2>
             <p className="text-[11px] text-slate-500 mb-2">
               Survivors: 1 pick &middot; Buy-backs: 4 picks &middot; ONE
-              loss = eliminated &middot; &#9888; LAST BUY-BACK DAY
+              loss = eliminated &middot; LAST BUY-BACK DAY
+            </p>
+            {players.filter((p) => p.history.some((e) => e.dayId === "day4")).map((p, i) => {
+              const d4 = p.history.find((e) => e.dayId === "day4");
+              const st = p.dayResults.day4 || "pending";
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-md flex-wrap mb-0.5"
+                  style={rowStyle(
+                    isPersonal && p.me,
+                    st === "eliminated"
+                  )}
+                >
+                  <span className="text-base">
+                    {st === "survived" ? "\u2705" : "\u274c"}
+                  </span>
+                  <span
+                    className="text-xs font-bold min-w-[90px]"
+                    style={{
+                      color:
+                        isPersonal && p.me ? "#a78bfa" : "#e2e8f0",
+                    }}
+                  >
+                    {p.n}
+                  </span>
+                  {d4?.buyBack && (
+                    <span className="text-[9px] text-amber-400 bg-[#3b2f08] px-1.5 py-px rounded">
+                      BB
+                    </span>
+                  )}
+                  <div className="flex gap-1 flex-wrap ml-auto">
+                    {d4?.picks.map((t) => (
+                      <Pill
+                        key={t}
+                        team={t}
+                        result={getD4Result(t)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ═══ DAY 5 (3/26) ═══ */}
+        {tab === "Day 5 (3/26)" && (
+          <div>
+            <h2 className="text-[15px] text-slate-50 mb-1">
+              Day 5 &mdash; Thursday 3/26 (Sweet 16)
+            </h2>
+            <p className="text-[11px] text-slate-500 mb-2">
+              1 pick per player &middot; No more buy-backs &middot; ONE
+              loss = eliminated
             </p>
             <div className={`${cardClass} overflow-x-auto`}>
               <h3 className="m-0 mb-2 text-[10px] text-slate-600">
                 GAME STATUS
               </h3>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-1.5">
-                {Object.entries(scores.day4 || {}).map(([t, s]) => {
-                  const r = getD4Result(t);
+                {Object.entries(scores.day5 || {}).map(([t, s]) => {
+                  const r = getD5Result(t);
                   return (
                     <div
                       key={t}
@@ -938,16 +992,16 @@ export default function App() {
                     </div>
                   );
                 })}
-                {Object.keys(scores.day4 || {}).length === 0 && (
+                {Object.keys(scores.day5 || {}).length === 0 && (
                   <p className="text-[10px] text-slate-600 col-span-full">
-                    Games start at 12:10 PM ET. Live scores will appear here.
+                    Sweet 16 games start Thu 3/26 at 7:10 PM ET. Live scores will appear here.
                   </p>
                 )}
               </div>
             </div>
             {active.map((p, i) => {
-              const d4 = p.history.find((e) => e.dayId === "day4");
-              const st = d4 ? (p.dayResults.day4 || "pending") : "";
+              const d5 = p.history.find((e) => e.dayId === "day5");
+              const st = d5 ? (p.dayResults.day5 || "pending") : "";
               return (
                 <div
                   key={i}
@@ -966,28 +1020,19 @@ export default function App() {
                   >
                     {p.n}
                   </span>
-                  {d4?.buyBack && (
-                    <span className="text-[9px] text-amber-400 bg-[#3b2f08] px-1.5 py-px rounded">
-                      BB
-                    </span>
-                  )}
-                  {d4 && <Badge type={st || "pending"} />}
+                  {d5 && <Badge type={st || "pending"} />}
                   <div className="flex gap-1 flex-wrap ml-auto">
-                    {d4?.picks.map((t) => (
+                    {d5?.picks.map((t) => (
                       <Pill
                         key={t}
                         team={t}
-                        result={getD4Result(t)}
+                        result={getD5Result(t)}
                       />
                     ))}
-                    {!d4 && !p.isPermElim && (
+                    {!d5 && (
                       <span className="text-[9px] text-blue-400 bg-[#1e2a4a] px-1.5 py-px rounded">
-                        Need {p.nextPicksNeeded || 1} pick{(p.nextPicksNeeded || 1) !== 1 ? "s" : ""}
-                        {p.nextIsBuyBack ? " (BB)" : ""}
+                        Need 1 pick
                       </span>
-                    )}
-                    {p.isPermElim && (
-                      <span className="text-[10px] text-slate-600">Out</span>
                     )}
                   </div>
                 </div>
@@ -1158,17 +1203,23 @@ export default function App() {
             </h2>
             {[
               {
-                label: "SUN 3/22 \u2014 Round of 32",
-                sub: "Advancing: 1 pick \u00b7 Buy-back: 4 picks \u00b7 \u26a0 LAST BUY-BACK DAY",
+                label: "THU 3/26 \u2014 Sweet 16",
+                sub: "1 pick per player \u00b7 No more buy-backs",
                 games: [
-                  { t: "12:10 PM", m: "(2) Purdue vs (7) Miami (FL)" },
-                  { t: "2:45 PM", m: "(2) Iowa State vs (7) Kentucky" },
-                  { t: "5:15 PM", m: "(4) Kansas vs (5) St. John's" },
-                  { t: "6:10 PM", m: "(3) Virginia vs (6) Tennessee" },
-                  { t: "7:10 PM", m: "(1) Florida vs (9) Iowa" },
-                  { t: "7:50 PM", m: "(1) Arizona vs (9) Utah State" },
-                  { t: "8:45 PM", m: "(2) UConn vs (7) UCLA" },
-                  { t: "9:45 PM", m: "(4) Alabama vs (5) Texas Tech" },
+                  { t: "7:10 PM", m: "(2) Purdue vs (11) Texas" },
+                  { t: "7:30 PM", m: "(4) Nebraska vs (9) Iowa" },
+                  { t: "9:45 PM", m: "(1) Arizona vs (4) Arkansas" },
+                  { t: "10:05 PM", m: "(2) Houston vs (3) Illinois" },
+                ],
+              },
+              {
+                label: "FRI 3/27 \u2014 Sweet 16",
+                sub: "1 pick per player \u00b7 No more buy-backs",
+                games: [
+                  { t: "7:10 PM", m: "(1) Duke vs (5) St. John's" },
+                  { t: "7:35 PM", m: "(1) Michigan vs (4) Alabama" },
+                  { t: "9:45 PM", m: "(2) UConn vs (3) Michigan State" },
+                  { t: "10:10 PM", m: "(2) Iowa State vs (6) Tennessee" },
                 ],
               },
             ].map((sec, si) => (
@@ -1676,70 +1727,84 @@ export default function App() {
               ))}
             </div>
             <div className={cardClass}>
-              <div className="grid grid-cols-[1fr_60px_50px_60px_60px] gap-2 px-2 py-1 text-[9px] text-slate-600 font-bold">
+              <div className="grid grid-cols-[1fr_60px_50px_60px_60px_55px] gap-2 px-2 py-1 text-[9px] text-slate-600 font-bold">
                 <span>PLAYER</span>
                 <span>BB USED</span>
                 <span>BB LEFT</span>
                 <span>TOTAL $</span>
                 <span>STATUS</span>
+                <span>PAID</span>
               </div>
               {[...players]
                 .sort((a, b) => b.money - a.money)
-                .map((p, i) => (
-                  <div
-                    key={i}
-                    className="grid grid-cols-[1fr_60px_50px_60px_60px] gap-2 px-2 py-1.5 rounded text-xs items-center"
-                    style={{
-                      background:
-                        isPersonal && p.me
-                          ? "#140a24"
-                          : i % 2 === 0
-                            ? "#0a0f1a"
-                            : "#080c14",
-                    }}
-                  >
-                    <span
-                      className="font-semibold"
+                .map((p, i) => {
+                  const paid = PAID_PLAYERS.has(p.n);
+                  return (
+                    <div
+                      key={i}
+                      className="grid grid-cols-[1fr_60px_50px_60px_60px_55px] gap-2 px-2 py-1.5 rounded text-xs items-center"
                       style={{
-                        color:
-                          isPersonal && p.me
-                            ? "#a78bfa"
-                            : "#e2e8f0",
+                        background: paid
+                          ? "#1a1408"
+                          : isPersonal && p.me
+                            ? "#140a24"
+                            : i % 2 === 0
+                              ? "#0a0f1a"
+                              : "#080c14",
+                        border: paid ? "1px solid #854d0e" : "1px solid transparent",
                       }}
                     >
-                      {p.n}
-                    </span>
-                    <span
-                      className="text-center"
-                      style={{
-                        color:
-                          p.totalBB > 0 ? "#fbbf24" : "#475569",
-                      }}
-                    >
-                      {p.totalBB > 0 ? p.totalBB : "\u2014"}
-                    </span>
-                    <span
-                      className="text-center"
-                      style={{
-                        color: p.isPermElim
-                          ? "#475569"
-                          : MAX_BB - p.totalBB <= 1
-                            ? "#ef4444"
-                            : "#94a3b8",
-                      }}
-                    >
-                      {p.isPermElim
-                        ? "\u2014"
-                        : MAX_BB - p.totalBB}
-                    </span>
-                    <span className="font-bold text-green-400 text-center">
-                      ${p.money}
-                    </span>
-                    <Badge
-                      type={p.isPermElim ? "out" : "survived"}
-                    />
-                  </div>
-                ))}
+                      <span
+                        className="font-semibold"
+                        style={{
+                          color:
+                            isPersonal && p.me
+                              ? "#a78bfa"
+                              : "#e2e8f0",
+                        }}
+                      >
+                        {p.n}
+                      </span>
+                      <span
+                        className="text-center"
+                        style={{
+                          color:
+                            p.totalBB > 0 ? "#fbbf24" : "#475569",
+                        }}
+                      >
+                        {p.totalBB > 0 ? p.totalBB : "\u2014"}
+                      </span>
+                      <span
+                        className="text-center"
+                        style={{
+                          color: p.isPermElim
+                            ? "#475569"
+                            : MAX_BB - p.totalBB <= 1
+                              ? "#ef4444"
+                              : "#94a3b8",
+                        }}
+                      >
+                        {p.isPermElim
+                          ? "\u2014"
+                          : MAX_BB - p.totalBB}
+                      </span>
+                      <span className="font-bold text-green-400 text-center">
+                        ${p.money}
+                      </span>
+                      <Badge
+                        type={p.isPermElim ? "out" : "survived"}
+                      />
+                      <span
+                        className="text-[10px] font-bold text-center"
+                        style={{
+                          color: paid ? "#fbbf24" : "#ef4444",
+                        }}
+                      >
+                        {paid ? "Paid" : "Not Paid"}
+                      </span>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}
