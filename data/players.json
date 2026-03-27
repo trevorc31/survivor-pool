@@ -9,7 +9,8 @@
     { "dayId": "day1", "picks": ["Nebraska", "Illinois"], "buyBack": false },
     { "dayId": "day2", "picks": ["St. John's", "Virginia"], "buyBack": false },
     { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Iowa"], "buyBack": false }
   ]},
   { "n": "Zach", "me": false, "history": [
     { "dayId": "day1", "picks": ["Nebraska", "Michigan State"], "buyBack": false },
@@ -21,19 +22,22 @@
     { "dayId": "day1", "picks": ["Gonzaga", "Arkansas"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kansas", "Virginia"], "buyBack": false },
     { "dayId": "day3", "picks": ["Illinois"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Nebraska"], "buyBack": false }
   ]},
   { "n": "Sara", "me": false, "history": [
     { "dayId": "day1", "picks": ["Nebraska", "Vanderbilt"], "buyBack": false },
     { "dayId": "day2", "picks": ["Texas Tech", "Tennessee"], "buyBack": false },
     { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Arizona"], "buyBack": false }
   ]},
   { "n": "Kyle", "me": false, "history": [
     { "dayId": "day1", "picks": ["Nebraska", "Vanderbilt"], "buyBack": false },
     { "dayId": "day2", "picks": ["Alabama", "St. John's"], "buyBack": false },
     { "dayId": "day3", "picks": ["Illinois"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Iowa"], "buyBack": false }
   ]},
   { "n": "Teddy", "me": false, "history": [
     { "dayId": "day1", "picks": ["Michigan State", "Nebraska"], "buyBack": false },
@@ -44,25 +48,29 @@
     { "dayId": "day1", "picks": ["Nebraska", "Arkansas"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kentucky", "Alabama"], "buyBack": false },
     { "dayId": "day3", "picks": ["Illinois"], "buyBack": false },
-    { "dayId": "day4", "picks": ["UConn"], "buyBack": false }
+    { "dayId": "day4", "picks": ["UConn"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Purdue"], "buyBack": false }
   ]},
   { "n": "Jason F", "me": false, "history": [
     { "dayId": "day1", "picks": ["Nebraska", "Arkansas"], "buyBack": false },
     { "dayId": "day2", "picks": ["Alabama", "Kansas"], "buyBack": false },
     { "dayId": "day3", "picks": ["Houston"], "buyBack": false },
-    { "dayId": "day4", "picks": ["UConn"], "buyBack": false }
+    { "dayId": "day4", "picks": ["UConn"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Purdue"], "buyBack": false }
   ]},
   { "n": "Norton", "me": false, "history": [
     { "dayId": "day1", "picks": ["Michigan State", "Arkansas"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kansas", "UConn"], "buyBack": false },
     { "dayId": "day3", "picks": ["Illinois"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Nebraska"], "buyBack": false }
   ]},
   { "n": "Reese", "me": false, "history": [
     { "dayId": "day1", "picks": ["Nebraska", "VCU"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kentucky", "Iowa State"], "buyBack": false },
     { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Arizona"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Arizona"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Purdue"], "buyBack": false }
   ]},
   { "n": "Dan", "me": false, "history": [
     { "dayId": "day1", "picks": ["Houston", "Gonzaga"], "buyBack": false },
@@ -74,7 +82,8 @@
     { "dayId": "day1", "picks": ["Duke", "Texas A&M"], "buyBack": false },
     { "dayId": "day2", "picks": ["St. John's", "UConn"], "buyBack": false },
     { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Houston"], "buyBack": false }
   ]},
   { "n": "Nick", "me": false, "history": [
     { "dayId": "day1", "picks": ["Arkansas", "Nebraska"], "buyBack": false },
@@ -86,7 +95,8 @@
     { "dayId": "day1", "picks": ["Gonzaga", "Nebraska"], "buyBack": false },
     { "dayId": "day2", "picks": ["UCLA", "Kentucky"], "buyBack": false },
     { "dayId": "day3", "picks": ["Michigan State"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Tennessee"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Tennessee"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Purdue"], "buyBack": false }
   ]},
   { "n": "Trevor", "me": true, "history": [
     { "dayId": "day1", "picks": ["St. Louis", "Wisconsin"], "buyBack": false },
@@ -104,7 +114,8 @@
     { "dayId": "day1", "picks": ["Wisconsin", "Arkansas"], "buyBack": false },
     { "dayId": "day2", "picks": ["Virginia", "Utah State", "Iowa", "UCLA"], "buyBack": true },
     { "dayId": "day3", "picks": ["Illinois"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Nebraska"], "buyBack": false }
   ]},
   { "n": "Matt C", "me": false, "history": [
     { "dayId": "day1", "picks": ["Wisconsin", "Vanderbilt"], "buyBack": false },
@@ -127,31 +138,36 @@
     { "dayId": "day1", "picks": ["Nebraska", "BYU"], "buyBack": false },
     { "dayId": "day2", "picks": ["Alabama", "UCLA", "Kansas", "UConn"], "buyBack": true },
     { "dayId": "day3", "picks": ["Illinois"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Houston"], "buyBack": false }
   ]},
   { "n": "Josh", "me": false, "history": [
     { "dayId": "day1", "picks": ["Saint Mary's", "Wisconsin"], "buyBack": false },
     { "dayId": "day2", "picks": ["St. John's", "UCLA", "Iowa", "Virginia"], "buyBack": true },
     { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Purdue"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Nebraska"], "buyBack": false }
   ]},
   { "n": "Artrel", "me": false, "history": [
     { "dayId": "day1", "picks": ["Wisconsin", "Gonzaga"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kentucky", "Texas Tech", "Kansas", "Alabama"], "buyBack": true },
     { "dayId": "day3", "picks": ["Michigan State"], "buyBack": false },
-    { "dayId": "day4", "picks": ["Tennessee"], "buyBack": false }
+    { "dayId": "day4", "picks": ["Tennessee"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Purdue"], "buyBack": false }
   ]},
   { "n": "Cade", "me": false, "history": [
     { "dayId": "day1", "picks": ["Illinois", "Wisconsin"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kansas", "Tennessee", "St. John's", "Alabama"], "buyBack": true },
     { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false },
-    { "dayId": "day4", "picks": ["UConn"], "buyBack": false }
+    { "dayId": "day4", "picks": ["UConn"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Purdue"], "buyBack": false }
   ]},
   { "n": "Brandon", "me": false, "history": [
     { "dayId": "day1", "picks": ["Ohio State", "Nebraska"], "buyBack": false },
     { "dayId": "day2", "picks": ["Kansas", "Utah State", "Virginia", "Iowa"], "buyBack": true },
     { "dayId": "day3", "picks": ["Arkansas"], "buyBack": false },
-    { "dayId": "day4", "picks": ["UConn"], "buyBack": false }
+    { "dayId": "day4", "picks": ["UConn"], "buyBack": false },
+    { "dayId": "day5", "picks": ["Purdue"], "buyBack": false }
   ]},
   { "n": "Sean", "me": false, "history": [
     { "dayId": "day1", "picks": ["Georgia", "Saint Mary's"], "buyBack": false },
