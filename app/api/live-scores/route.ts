@@ -5,21 +5,20 @@ import resultsData from "@/data/results.json";
 const ESPN_BASE =
   "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard";
 
-// Map calendar dates to tournament days
+// Map calendar dates to tournament days (not sequential — gaps between rounds)
 const DAY_DATES: Record<string, string> = {
-  "2026-03-19": "day1",
-  "2026-03-20": "day2",
-  "2026-03-21": "day3",
-  "2026-03-22": "day4",
-  // Add more days as tournament progresses
-  "2026-03-23": "day5",
-  "2026-03-24": "day6",
-  "2026-03-25": "day7",
-  "2026-03-26": "day8",
-  "2026-03-27": "day9",
-  "2026-03-28": "day10",
-  "2026-03-29": "day11",
-  "2026-03-30": "day12",
+  "2026-03-19": "day1",  // R1 Thu
+  "2026-03-20": "day2",  // R1 Fri
+  "2026-03-21": "day3",  // R2 Sat
+  "2026-03-22": "day4",  // R2 Sun
+  // 3-day gap (Mon-Wed no games)
+  "2026-03-26": "day5",  // Sweet 16 Thu
+  "2026-03-27": "day6",  // Sweet 16 Fri
+  "2026-03-28": "day7",  // Elite 8 Sat
+  "2026-03-29": "day8",  // Elite 8 Sun
+  // 5-day gap
+  "2026-04-05": "day9",  // Final Four Sat
+  "2026-04-07": "day10", // Championship Mon
 };
 
 // Teams playing each day (only show these in game status)
