@@ -31,6 +31,12 @@
       "Arizona": "won", "Utah State": "lost",
       "UConn": "won", "UCLA": "lost",
       "Alabama": "won", "Texas Tech": "lost"
+    },
+    "day5": {
+      "Purdue": "won", "Texas": "lost",
+      "Iowa": "won", "Nebraska": "lost",
+      "Arizona": "won", "Arkansas": "lost",
+      "Illinois": "won", "Houston": "lost"
     }
   },
   "scores": {
@@ -64,6 +70,12 @@
       "Arizona": "78-66 vs Utah State", "Utah State": "66-78 vs Arizona",
       "UConn": "73-57 vs UCLA", "UCLA": "57-73 vs UConn",
       "Alabama": "90-65 vs Texas Tech", "Texas Tech": "65-90 vs Alabama"
+    },
+    "day5": {
+      "Purdue": "79-77 vs Texas", "Texas": "77-79 vs Purdue",
+      "Iowa": "77-71 vs Nebraska", "Nebraska": "71-77 vs Iowa",
+      "Arizona": "W vs Arkansas", "Arkansas": "L vs Arizona",
+      "Illinois": "65-55 vs Houston", "Houston": "55-65 vs Illinois"
     }
   },
   "days": [
@@ -72,6 +84,7 @@
     { "id": "day3", "label": "Day 3", "date": "Sat 3/21", "dayOfWeek": "saturday", "advPicks": 1, "bbPicks": 4 },
     { "id": "day4", "label": "Day 4", "date": "Sun 3/22", "dayOfWeek": "sunday", "advPicks": 1, "bbPicks": 4 },
     { "id": "day5", "label": "Day 5", "date": "Thu 3/26", "dayOfWeek": "thursday", "advPicks": 1, "bbPicks": null },
-    { "id": "day6", "label": "Day 6", "date": "Fri 3/27", "dayOfWeek": "friday", "advPicks": 1, "bbPicks": null }
+    { "id": "day6", "label": "Day 6", "date": "Fri 3/27", "dayOfWeek": "friday", "advPicks": 1, "bbPicks": null },
+    { "id": "day7", "label": "Day 7", "date": "Sat 3/28", "dayOfWeek": "saturday", "advPicks": 1, "bbPicks": null }
   ]
 }

@@ -34,17 +34,6 @@ const DAYS: DayConfig[] = resultsData.days as DayConfig[];
 // Schedule data — used by both Schedule tab and Edge Lab
 const SCHEDULE_DAYS = [
   {
-    dayId: "day5",
-    label: "THU 3/26 — Sweet 16",
-    sub: "1 pick · No more buy-backs",
-    games: [
-      { t: "7:10 PM", m: "(2) Purdue vs (11) Texas", teams: ["Purdue", "Texas"] },
-      { t: "7:30 PM", m: "(4) Nebraska vs (9) Iowa", teams: ["Nebraska", "Iowa"] },
-      { t: "9:45 PM", m: "(1) Arizona vs (4) Arkansas", teams: ["Arizona", "Arkansas"] },
-      { t: "10:05 PM", m: "(2) Houston vs (3) Illinois", teams: ["Houston", "Illinois"] },
-    ],
-  },
-  {
     dayId: "day6",
     label: "FRI 3/27 — Sweet 16",
     sub: "1 pick · No more buy-backs",
@@ -53,6 +42,15 @@ const SCHEDULE_DAYS = [
       { t: "7:35 PM", m: "(1) Michigan vs (4) Alabama", teams: ["Michigan", "Alabama"] },
       { t: "9:45 PM", m: "(2) UConn vs (3) Michigan State", teams: ["UConn", "Michigan State"] },
       { t: "10:10 PM", m: "(2) Iowa State vs (6) Tennessee", teams: ["Iowa State", "Tennessee"] },
+    ],
+  },
+  {
+    dayId: "day7",
+    label: "SAT 3/28 — Elite Eight",
+    sub: "1 pick",
+    games: [
+      { t: "6:09 PM", m: "(3) Illinois vs (9) Iowa", teams: ["Illinois", "Iowa"] },
+      { t: "8:49 PM", m: "(1) Arizona vs (2) Purdue", teams: ["Arizona", "Purdue"] },
     ],
   },
 ];
@@ -224,7 +222,7 @@ export default function App() {
   const TABS = isPersonal
     ? [
         "Dashboard",
-        "Day 5 (3/26)",
+        "Day 6 (3/27)",
         "Used Teams",
         "Schedule",
         "Edge Lab",
@@ -233,10 +231,11 @@ export default function App() {
         "Day 2 (3/20)",
         "Day 3 (3/21)",
         "Day 4 (3/22)",
+        "Day 5 (3/26)",
       ]
     : [
         "Dashboard",
-        "Day 5 (3/26)",
+        "Day 6 (3/27)",
         "Used Teams",
         "Schedule",
         "Money",
@@ -244,6 +243,7 @@ export default function App() {
         "Day 2 (3/20)",
         "Day 3 (3/21)",
         "Day 4 (3/22)",
+        "Day 5 (3/26)",
       ];
 
   const players = useMemo(
@@ -962,11 +962,60 @@ export default function App() {
           </div>
         )}
 
-        {/* ═══ DAY 5 (3/26) ═══ */}
+        {/* ═══ DAY 5 (3/26) — Finalized ═══ */}
         {tab === "Day 5 (3/26)" && (
           <div>
             <h2 className="text-[15px] text-slate-50 mb-1">
               Day 5 &mdash; Thursday 3/26 (Sweet 16)
+            </h2>
+            <p className="text-[11px] text-slate-500 mb-2">
+              1 pick per player &middot; No more buy-backs &middot; ONE
+              loss = eliminated
+            </p>
+            {players.filter((p) => p.history.some((e) => e.dayId === "day5")).map((p, i) => {
+              const d5 = p.history.find((e) => e.dayId === "day5");
+              const st = p.dayResults.day5 || "pending";
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-md flex-wrap mb-0.5"
+                  style={rowStyle(
+                    isPersonal && p.me,
+                    st === "eliminated"
+                  )}
+                >
+                  <span className="text-base">
+                    {st === "survived" ? "\u2705" : "\u274c"}
+                  </span>
+                  <span
+                    className="text-xs font-bold min-w-[90px]"
+                    style={{
+                      color:
+                        isPersonal && p.me ? "#a78bfa" : "#e2e8f0",
+                    }}
+                  >
+                    {p.n}
+                  </span>
+                  <div className="flex gap-1 flex-wrap ml-auto">
+                    {d5?.picks.map((t) => (
+                      <Pill
+                        key={t}
+                        team={t}
+                        result={getD5Result(t)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ═══ DAY 6 (3/27) — Live ═══ */}
+        {tab === "Day 6 (3/27)" && (
+          <div>
+            <h2 className="text-[15px] text-slate-50 mb-1">
+              Day 6 &mdash; Friday 3/27 (Sweet 16)
             </h2>
             <p className="text-[11px] text-slate-500 mb-2">
               1 pick per player &middot; No more buy-backs &middot; ONE
@@ -977,8 +1026,8 @@ export default function App() {
                 GAME STATUS
               </h3>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-1.5">
-                {Object.entries(scores.day5 || {}).map(([t, s]) => {
-                  const r = getD5Result(t);
+                {Object.entries(scores.day6 || {}).map(([t, s]) => {
+                  const r = teamResults.day6?.[t] || "pending";
                   return (
                     <div
                       key={t}
@@ -1017,16 +1066,16 @@ export default function App() {
                     </div>
                   );
                 })}
-                {Object.keys(scores.day5 || {}).length === 0 && (
+                {Object.keys(scores.day6 || {}).length === 0 && (
                   <p className="text-[10px] text-slate-600 col-span-full">
-                    Sweet 16 games start Thu 3/26 at 7:10 PM ET. Live scores will appear here.
+                    Sweet 16 games start Fri 3/27 at 7:10 PM ET. Live scores will appear here.
                   </p>
                 )}
               </div>
             </div>
             {active.map((p, i) => {
-              const d5 = p.history.find((e) => e.dayId === "day5");
-              const st = d5 ? (p.dayResults.day5 || "pending") : "";
+              const d6 = p.history.find((e) => e.dayId === "day6");
+              const st = d6 ? (p.dayResults.day6 || "pending") : "";
               return (
                 <div
                   key={i}
@@ -1045,16 +1094,16 @@ export default function App() {
                   >
                     {p.n}
                   </span>
-                  {d5 && <Badge type={st || "pending"} />}
+                  {d6 && <Badge type={st || "pending"} />}
                   <div className="flex gap-1 flex-wrap ml-auto">
-                    {d5?.picks.map((t) => (
+                    {d6?.picks.map((t) => (
                       <Pill
                         key={t}
                         team={t}
-                        result={getD5Result(t)}
+                        result={teamResults.day6?.[t] || "pending"}
                       />
                     ))}
-                    {!d5 && (
+                    {!d6 && (
                       <span className="text-[9px] text-blue-400 bg-[#1e2a4a] px-1.5 py-px rounded">
                         Need 1 pick
                       </span>
@@ -1228,16 +1277,6 @@ export default function App() {
             </h2>
             {[
               {
-                label: "THU 3/26 \u2014 Sweet 16",
-                sub: "1 pick per player \u00b7 No more buy-backs",
-                games: [
-                  { t: "7:10 PM", m: "(2) Purdue vs (11) Texas" },
-                  { t: "7:30 PM", m: "(4) Nebraska vs (9) Iowa" },
-                  { t: "9:45 PM", m: "(1) Arizona vs (4) Arkansas" },
-                  { t: "10:05 PM", m: "(2) Houston vs (3) Illinois" },
-                ],
-              },
-              {
                 label: "FRI 3/27 \u2014 Sweet 16",
                 sub: "1 pick per player \u00b7 No more buy-backs",
                 games: [
@@ -1245,6 +1284,14 @@ export default function App() {
                   { t: "7:35 PM", m: "(1) Michigan vs (4) Alabama" },
                   { t: "9:45 PM", m: "(2) UConn vs (3) Michigan State" },
                   { t: "10:10 PM", m: "(2) Iowa State vs (6) Tennessee" },
+                ],
+              },
+              {
+                label: "SAT 3/28 \u2014 Elite Eight",
+                sub: "1 pick per player",
+                games: [
+                  { t: "6:09 PM", m: "(3) Illinois vs (9) Iowa" },
+                  { t: "8:49 PM", m: "(1) Arizona vs (2) Purdue" },
                 ],
               },
             ].map((sec, si) => (
