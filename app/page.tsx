@@ -254,6 +254,19 @@ export default function App() {
   const pot = players.reduce((s, p) => s + p.money, 0);
   const trevor = players.find((p) => p.me);
 
+  // Dashboard shows the latest day that has any player picks submitted
+  const dashDayId = useMemo(() => {
+    for (let i = DAYS.length - 1; i >= 0; i--) {
+      const dayId = DAYS[i].id;
+      if (players.some((p) => p.history.some((e) => e.dayId === dayId))) {
+        return dayId;
+      }
+    }
+    return DAYS[DAYS.length - 1]?.id || "day1";
+  }, [players]);
+  const dashDayLabel = DAYS.find((d) => d.id === dashDayId)?.label || "";
+  const getDashResult = (t: string) => teamResults[dashDayId]?.[t] || "pending";
+
   const teamMap = useMemo(() => {
     const m: Record<string, string[]> = {};
     active.forEach((p) => {
@@ -308,6 +321,18 @@ export default function App() {
     });
     return Object.entries(f).sort((a, b) => b[1] - a[1]);
   }, [active]);
+
+  // Dynamic dashboard frequency based on dashDayId
+  const dashFreq = useMemo(() => {
+    const f: Record<string, number> = {};
+    active.forEach((p) => {
+      const dh = p.history.find((e) => e.dayId === dashDayId);
+      dh?.picks.forEach((t) => {
+        f[t] = (f[t] || 0) + 1;
+      });
+    });
+    return Object.entries(f).sort((a, b) => b[1] - a[1]);
+  }, [active, dashDayId]);
 
   const edge = useMemo(() => {
     if (!isPersonal || !trevor) return [];
@@ -508,8 +533,8 @@ export default function App() {
         </div>
         <p className="mt-0.5 text-[11px] text-slate-600">
           {active.length} alive &middot;{" "}
-          {players.filter((p) => p.isPermElim).length} out &middot; Day 5 Thu
-          3/26 &middot; Pot: ${pot}
+          {players.filter((p) => p.isPermElim).length} out &middot; {dashDayLabel}
+          &middot; Pot: ${pot}
           {lastFetched && (
             <span className="ml-2">
               &middot;{" "}
@@ -573,14 +598,14 @@ export default function App() {
               </div>
             )}
 
-            {day5Freq.length > 0 && (
+            {dashFreq.length > 0 && (
               <div className={cardClass}>
                 <h3 className="m-0 mb-2 text-[11px] text-slate-500 tracking-wider">
-                  DAY 5 TEAM POPULARITY
+                  {dashDayLabel.toUpperCase()} TEAM POPULARITY
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
-                  {day5Freq.map(([t, c]) => {
-                    const r = getD5Result(t);
+                  {dashFreq.map(([t, c]) => {
+                    const r = getDashResult(t);
                     return (
                       <div
                         key={t}
@@ -632,7 +657,7 @@ export default function App() {
 
             <div className={cardClass}>
               <h3 className="m-0 mb-2 text-[11px] text-slate-500 tracking-wider">
-                ALL PARTICIPANTS &mdash; DAY 5
+                ALL PARTICIPANTS &mdash; {dashDayLabel.toUpperCase()}
               </h3>
               <div className="flex flex-col gap-1">
                 {[...players].sort((a, b) => {
@@ -640,10 +665,10 @@ export default function App() {
                   if (!a.isPermElim && b.isPermElim) return -1;
                   return 0;
                 }).map((p, i) => {
-                  const d5 = p.history.find((e) => e.dayId === "day5");
+                  const dh = p.history.find((e) => e.dayId === dashDayId);
                   const st = p.currentStatus;
-                  const d5Results = d5?.picks.map((t) => getD5Result(t)) || [];
-                  const allWonToday = d5 && d5Results.length > 0 && d5Results.every((r) => r === "won");
+                  const dhResults = dh?.picks.map((t) => getDashResult(t)) || [];
+                  const allWonToday = dh && dhResults.length > 0 && dhResults.every((r) => r === "won");
                   return (
                     <div
                       key={i}
@@ -676,20 +701,20 @@ export default function App() {
                           &#9888; DUPE: {p.dupes.join(",")}
                         </span>
                       )}
-                      {p.nextPicksNeeded > 0 && !d5 && !p.isPermElim && (
+                      {p.nextPicksNeeded > 0 && !dh && !p.isPermElim && (
                         <span className="text-[9px] text-blue-400 bg-[#1e2a4a] px-1.5 py-px rounded">
                           Need {p.nextPicksNeeded} pick{p.nextPicksNeeded !== 1 ? "s" : ""}
                         </span>
                       )}
                       <div className="flex flex-wrap gap-1 ml-auto">
-                        {d5?.picks.map((t) => (
+                        {dh?.picks.map((t) => (
                           <Pill
                             key={t}
                             team={t}
-                            result={getD5Result(t)}
+                            result={getDashResult(t)}
                           />
                         ))}
-                        {!d5 && !p.isPermElim && (
+                        {!dh && !p.isPermElim && (
                           <span className="text-[10px] text-slate-600">
                             No picks yet
                           </span>
