@@ -34,23 +34,21 @@ const DAYS: DayConfig[] = resultsData.days as DayConfig[];
 // Schedule data — used by both Schedule tab and Edge Lab
 const SCHEDULE_DAYS = [
   {
-    dayId: "day6",
-    label: "FRI 3/27 — Sweet 16",
-    sub: "1 pick · No more buy-backs",
-    games: [
-      { t: "7:10 PM", m: "(1) Duke vs (5) St. John's", teams: ["Duke", "St. John's"] },
-      { t: "7:35 PM", m: "(1) Michigan vs (4) Alabama", teams: ["Michigan", "Alabama"] },
-      { t: "9:45 PM", m: "(2) UConn vs (3) Michigan State", teams: ["UConn", "Michigan State"] },
-      { t: "10:10 PM", m: "(2) Iowa State vs (6) Tennessee", teams: ["Iowa State", "Tennessee"] },
-    ],
-  },
-  {
     dayId: "day7",
     label: "SAT 3/28 — Elite Eight",
     sub: "1 pick",
     games: [
       { t: "6:09 PM", m: "(3) Illinois vs (9) Iowa", teams: ["Illinois", "Iowa"] },
       { t: "8:49 PM", m: "(1) Arizona vs (2) Purdue", teams: ["Arizona", "Purdue"] },
+    ],
+  },
+  {
+    dayId: "day8",
+    label: "SUN 3/29 — Elite Eight",
+    sub: "1 pick",
+    games: [
+      { t: "2:15 PM", m: "(1) Michigan vs (6) Tennessee", teams: ["Michigan", "Tennessee"] },
+      { t: "5:05 PM", m: "(1) Duke vs (2) UConn", teams: ["Duke", "UConn"] },
     ],
   },
 ];
@@ -222,28 +220,24 @@ export default function App() {
   const TABS = isPersonal
     ? [
         "Dashboard",
-        "Day 6 (3/27)",
+        "Day 7 (3/28)",
+        "Available Teams",
         "Used Teams",
         "Schedule",
         "Edge Lab",
         "Money",
-        "Day 1 (3/19)",
-        "Day 2 (3/20)",
-        "Day 3 (3/21)",
-        "Day 4 (3/22)",
         "Day 5 (3/26)",
+        "Day 6 (3/27)",
       ]
     : [
         "Dashboard",
-        "Day 6 (3/27)",
+        "Day 7 (3/28)",
+        "Available Teams",
         "Used Teams",
         "Schedule",
         "Money",
-        "Day 1 (3/19)",
-        "Day 2 (3/20)",
-        "Day 3 (3/21)",
-        "Day 4 (3/22)",
         "Day 5 (3/26)",
+        "Day 6 (3/27)",
       ];
 
   const players = useMemo(
@@ -733,235 +727,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ═══ DAY 1 ═══ */}
-        {tab === "Day 1 (3/19)" && (
-          <div>
-            <h2 className="text-[15px] text-slate-50 mb-1">
-              Day 1 &mdash; Thursday 3/19
-            </h2>
-            <p className="text-[11px] text-slate-500 mb-3">
-              Everyone picks 2. One loss = eliminated.
-            </p>
-            {players.map((p, i) => {
-              const d1 = p.history.find((e) => e.dayId === "day1");
-              const survived = p.dayResults.day1 === "survived";
-              return (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-md flex-wrap mb-0.5"
-                  style={rowStyle(isPersonal && p.me, !survived)}
-                >
-                  <span className="text-base">
-                    {survived ? "\u2705" : "\u274c"}
-                  </span>
-                  <span
-                    className="text-xs font-bold min-w-[100px]"
-                    style={{
-                      color:
-                        isPersonal && p.me ? "#a78bfa" : "#e2e8f0",
-                    }}
-                  >
-                    {p.n}
-                  </span>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {d1?.picks.map((t) => (
-                      <Pill
-                        key={t}
-                        team={t}
-                        result={
-                          teamResults.day1[t] === "won"
-                            ? "won"
-                            : "lost"
-                        }
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-slate-600 ml-auto">
-                    {!survived && !p.isPermElim
-                      ? "\u2192 Bought back"
-                      : p.isPermElim
-                        ? "DONE"
-                        : ""}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ═══ DAY 2 ═══ */}
-        {tab === "Day 2 (3/20)" && (
-          <div>
-            <h2 className="text-[15px] text-slate-50 mb-1">
-              Day 2 &mdash; Friday 3/20
-            </h2>
-            <p className="text-[11px] text-slate-500 mb-2">
-              Survivors: 2 picks &middot; Buy-backs: 4 picks &middot; ONE
-              loss = eliminated
-            </p>
-            {players.filter((p) => p.history.some((e) => e.dayId === "day2")).map((p, i) => {
-              const d2 = p.history.find((e) => e.dayId === "day2");
-              const st = p.dayResults.day2 || "pending";
-              return (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-md flex-wrap mb-0.5"
-                  style={rowStyle(
-                    isPersonal && p.me,
-                    st === "eliminated"
-                  )}
-                >
-                  <span className="text-base">
-                    {st === "survived" ? "\u2705" : "\u274c"}
-                  </span>
-                  <span
-                    className="text-xs font-bold min-w-[90px]"
-                    style={{
-                      color:
-                        isPersonal && p.me ? "#a78bfa" : "#e2e8f0",
-                    }}
-                  >
-                    {p.n}
-                  </span>
-                  {d2?.buyBack && (
-                    <span className="text-[9px] text-amber-400 bg-[#3b2f08] px-1.5 py-px rounded">
-                      BB
-                    </span>
-                  )}
-                  <div className="flex gap-1 flex-wrap ml-auto">
-                    {d2?.picks.map((t) => (
-                      <Pill
-                        key={t}
-                        team={t}
-                        result={getD2Result(t)}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-slate-600">
-                    {st === "eliminated" && !p.isPermElim
-                      ? "\u2192 Buy-back"
-                      : ""}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ═══ DAY 3 LIVE ═══ */}
-        {/* ═══ DAY 3 ═══ */}
-        {tab === "Day 3 (3/21)" && (
-          <div>
-            <h2 className="text-[15px] text-slate-50 mb-1">
-              Day 3 &mdash; Saturday 3/21
-            </h2>
-            <p className="text-[11px] text-slate-500 mb-2">
-              Survivors: 1 pick &middot; Buy-backs: 4 picks &middot; ONE
-              loss = eliminated
-            </p>
-            {players.filter((p) => p.history.some((e) => e.dayId === "day3")).map((p, i) => {
-              const d3 = p.history.find((e) => e.dayId === "day3");
-              const st = p.dayResults.day3 || "pending";
-              return (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-md flex-wrap mb-0.5"
-                  style={rowStyle(
-                    isPersonal && p.me,
-                    st === "eliminated"
-                  )}
-                >
-                  <span className="text-base">
-                    {st === "survived" ? "\u2705" : "\u274c"}
-                  </span>
-                  <span
-                    className="text-xs font-bold min-w-[90px]"
-                    style={{
-                      color:
-                        isPersonal && p.me ? "#a78bfa" : "#e2e8f0",
-                    }}
-                  >
-                    {p.n}
-                  </span>
-                  {d3?.buyBack && (
-                    <span className="text-[9px] text-amber-400 bg-[#3b2f08] px-1.5 py-px rounded">
-                      BB
-                    </span>
-                  )}
-                  <div className="flex gap-1 flex-wrap ml-auto">
-                    {d3?.picks.map((t) => (
-                      <Pill
-                        key={t}
-                        team={t}
-                        result={getD3Result(t)}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-slate-600">
-                    {st === "eliminated" && !p.isPermElim
-                      ? "\u2192 Buy-back"
-                      : ""}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ═══ DAY 4 ═══ */}
-        {tab === "Day 4 (3/22)" && (
-          <div>
-            <h2 className="text-[15px] text-slate-50 mb-1">
-              Day 4 &mdash; Sunday 3/22
-            </h2>
-            <p className="text-[11px] text-slate-500 mb-2">
-              Survivors: 1 pick &middot; Buy-backs: 4 picks &middot; ONE
-              loss = eliminated &middot; LAST BUY-BACK DAY
-            </p>
-            {players.filter((p) => p.history.some((e) => e.dayId === "day4")).map((p, i) => {
-              const d4 = p.history.find((e) => e.dayId === "day4");
-              const st = p.dayResults.day4 || "pending";
-              return (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-md flex-wrap mb-0.5"
-                  style={rowStyle(
-                    isPersonal && p.me,
-                    st === "eliminated"
-                  )}
-                >
-                  <span className="text-base">
-                    {st === "survived" ? "\u2705" : "\u274c"}
-                  </span>
-                  <span
-                    className="text-xs font-bold min-w-[90px]"
-                    style={{
-                      color:
-                        isPersonal && p.me ? "#a78bfa" : "#e2e8f0",
-                    }}
-                  >
-                    {p.n}
-                  </span>
-                  {d4?.buyBack && (
-                    <span className="text-[9px] text-amber-400 bg-[#3b2f08] px-1.5 py-px rounded">
-                      BB
-                    </span>
-                  )}
-                  <div className="flex gap-1 flex-wrap ml-auto">
-                    {d4?.picks.map((t) => (
-                      <Pill
-                        key={t}
-                        team={t}
-                        result={getD4Result(t)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
         {/* ═══ DAY 5 (3/26) — Finalized ═══ */}
         {tab === "Day 5 (3/26)" && (
           <div>
@@ -1011,7 +776,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ═══ DAY 6 (3/27) — Live ═══ */}
+        {/* ═══ DAY 6 (3/27) — Finalized ═══ */}
         {tab === "Day 6 (3/27)" && (
           <div>
             <h2 className="text-[15px] text-slate-50 mb-1">
@@ -1021,61 +786,9 @@ export default function App() {
               1 pick per player &middot; No more buy-backs &middot; ONE
               loss = eliminated
             </p>
-            <div className={`${cardClass} overflow-x-auto`}>
-              <h3 className="m-0 mb-2 text-[10px] text-slate-600">
-                GAME STATUS
-              </h3>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-1.5">
-                {Object.entries(scores.day6 || {}).map(([t, s]) => {
-                  const r = teamResults.day6?.[t] || "pending";
-                  return (
-                    <div
-                      key={t}
-                      className="rounded px-2 py-1.5"
-                      style={{
-                        background:
-                          r === "won"
-                            ? "#041a0a"
-                            : r === "lost"
-                              ? "#1a0808"
-                              : r === "in_progress"
-                                ? "#1a1800"
-                                : "#0a0f1a",
-                        border: `1px solid ${r === "won" ? "#166534" : r === "lost" ? "#7f1d1d" : r === "in_progress" ? "#854d0e" : "#1a2030"}`,
-                      }}
-                    >
-                      <div
-                        className="text-[11px] font-bold"
-                        style={{
-                          color:
-                            r === "won"
-                              ? "#4ade80"
-                              : r === "lost"
-                                ? "#f87171"
-                                : r === "in_progress"
-                                  ? "#fbbf24"
-                                  : "#94a3b8",
-                        }}
-                      >
-                        {r === "in_progress" ? "\u25c9 " : ""}
-                        {t}
-                      </div>
-                      <div className="text-[10px] text-slate-600">
-                        {s}
-                      </div>
-                    </div>
-                  );
-                })}
-                {Object.keys(scores.day6 || {}).length === 0 && (
-                  <p className="text-[10px] text-slate-600 col-span-full">
-                    Sweet 16 games start Fri 3/27 at 7:10 PM ET. Live scores will appear here.
-                  </p>
-                )}
-              </div>
-            </div>
-            {active.map((p, i) => {
+            {players.filter((p) => p.history.some((e) => e.dayId === "day6")).map((p, i) => {
               const d6 = p.history.find((e) => e.dayId === "day6");
-              const st = d6 ? (p.dayResults.day6 || "pending") : "";
+              const st = p.dayResults.day6 || "pending";
               return (
                 <div
                   key={i}
@@ -1085,6 +798,9 @@ export default function App() {
                     st === "eliminated"
                   )}
                 >
+                  <span className="text-base">
+                    {st === "survived" ? "\u2705" : "\u274c"}
+                  </span>
                   <span
                     className="text-xs font-bold min-w-[90px]"
                     style={{
@@ -1094,7 +810,6 @@ export default function App() {
                   >
                     {p.n}
                   </span>
-                  {d6 && <Badge type={st || "pending"} />}
                   <div className="flex gap-1 flex-wrap ml-auto">
                     {d6?.picks.map((t) => (
                       <Pill
@@ -1103,7 +818,71 @@ export default function App() {
                         result={teamResults.day6?.[t] || "pending"}
                       />
                     ))}
-                    {!d6 && (
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ═══ DAY 7 (3/28) — Live ═══ */}
+        {tab === "Day 7 (3/28)" && (
+          <div>
+            <h2 className="text-[15px] text-slate-50 mb-1">
+              Day 7 &mdash; Saturday 3/28 (Elite Eight)
+            </h2>
+            <p className="text-[11px] text-slate-500 mb-2">
+              1 pick per player &middot; ONE loss = eliminated
+            </p>
+            <div className={`${cardClass} overflow-x-auto`}>
+              <h3 className="m-0 mb-2 text-[10px] text-slate-600">
+                GAME STATUS
+              </h3>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-1.5">
+                {Object.entries(scores.day7 || {}).map(([t, s]) => {
+                  const r = teamResults.day7?.[t] || "pending";
+                  return (
+                    <div
+                      key={t}
+                      className="rounded px-2 py-1.5"
+                      style={{
+                        background:
+                          r === "won" ? "#041a0a" : r === "lost" ? "#1a0808" : r === "in_progress" ? "#1a1800" : "#0a0f1a",
+                        border: `1px solid ${r === "won" ? "#166534" : r === "lost" ? "#7f1d1d" : r === "in_progress" ? "#854d0e" : "#1a2030"}`,
+                      }}
+                    >
+                      <div className="text-[11px] font-bold" style={{ color: r === "won" ? "#4ade80" : r === "lost" ? "#f87171" : r === "in_progress" ? "#fbbf24" : "#94a3b8" }}>
+                        {r === "in_progress" ? "\u25c9 " : ""}{t}
+                      </div>
+                      <div className="text-[10px] text-slate-600">{s}</div>
+                    </div>
+                  );
+                })}
+                {Object.keys(scores.day7 || {}).length === 0 && (
+                  <p className="text-[10px] text-slate-600 col-span-full">
+                    Elite Eight games: Illinois vs Iowa 6:09 PM ET, Arizona vs Purdue 8:49 PM ET
+                  </p>
+                )}
+              </div>
+            </div>
+            {active.map((p, i) => {
+              const d7 = p.history.find((e) => e.dayId === "day7");
+              const st = d7 ? (p.dayResults.day7 || "pending") : "";
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-md flex-wrap mb-0.5"
+                  style={rowStyle(isPersonal && p.me, st === "eliminated")}
+                >
+                  <span className="text-xs font-bold min-w-[90px]" style={{ color: isPersonal && p.me ? "#a78bfa" : "#e2e8f0" }}>
+                    {p.n}
+                  </span>
+                  {d7 && <Badge type={st || "pending"} />}
+                  <div className="flex gap-1 flex-wrap ml-auto">
+                    {d7?.picks.map((t) => (
+                      <Pill key={t} team={t} result={teamResults.day7?.[t] || "pending"} />
+                    ))}
+                    {!d7 && (
                       <span className="text-[9px] text-blue-400 bg-[#1e2a4a] px-1.5 py-px rounded">
                         Need 1 pick
                       </span>
@@ -1114,6 +893,66 @@ export default function App() {
             })}
           </div>
         )}
+
+        {/* ═══ AVAILABLE TEAMS ═══ */}
+        {tab === "Available Teams" && (() => {
+          // Teams still in the tournament
+          const elimTeams = new Set<string>();
+          Object.values(teamResults).forEach((dayR) => {
+            if (dayR) Object.entries(dayR).forEach(([t, r]) => { if (r === "lost") elimTeams.add(t); });
+          });
+          // All teams that have ever appeared
+          const allTeams = new Set<string>();
+          Object.values(teamResults).forEach((dayR) => {
+            if (dayR) Object.keys(dayR).forEach((t) => allTeams.add(t));
+          });
+          const aliveTeams = [...allTeams].filter((t) => !elimTeams.has(t)).sort();
+
+          return (
+            <div>
+              <h2 className="text-[15px] text-slate-50 mb-1">Available Teams</h2>
+              <p className="text-[11px] text-slate-500 mb-3">
+                Teams still in the tournament that each surviving player can pick
+              </p>
+              <div className={cardClass}>
+                <h3 className="m-0 mb-2 text-[10px] text-slate-600">
+                  TEAMS STILL ALIVE ({aliveTeams.length})
+                </h3>
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {aliveTeams.map((t) => (
+                    <span key={t} className="inline-flex items-center px-2.5 py-1 rounded-2xl text-[11px] font-semibold bg-[#052e16] text-green-400 border border-[#166534]">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              {active.map((p, i) => {
+                const available = aliveTeams.filter((t) => !p.usedTeams.has(t));
+                return (
+                  <div key={i} className={`${cardClass}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold" style={{ color: isPersonal && p.me ? "#a78bfa" : "#e2e8f0" }}>
+                        {p.n}
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        {available.length} available
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {available.length > 0 ? available.map((t) => (
+                        <span key={t} className="inline-flex items-center px-2 py-0.5 rounded-2xl text-[11px] font-semibold bg-[#052e16] text-green-400 border border-[#166534]">
+                          {t}
+                        </span>
+                      )) : (
+                        <span className="text-[10px] text-red-400">No available teams remaining!</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* ═══ USED TEAMS ═══ */}
         {tab === "Used Teams" && (() => {
@@ -1277,21 +1116,19 @@ export default function App() {
             </h2>
             {[
               {
-                label: "FRI 3/27 \u2014 Sweet 16",
-                sub: "1 pick per player \u00b7 No more buy-backs",
-                games: [
-                  { t: "7:10 PM", m: "(1) Duke vs (5) St. John's" },
-                  { t: "7:35 PM", m: "(1) Michigan vs (4) Alabama" },
-                  { t: "9:45 PM", m: "(2) UConn vs (3) Michigan State" },
-                  { t: "10:10 PM", m: "(2) Iowa State vs (6) Tennessee" },
-                ],
-              },
-              {
                 label: "SAT 3/28 \u2014 Elite Eight",
                 sub: "1 pick per player",
                 games: [
                   { t: "6:09 PM", m: "(3) Illinois vs (9) Iowa" },
                   { t: "8:49 PM", m: "(1) Arizona vs (2) Purdue" },
+                ],
+              },
+              {
+                label: "SUN 3/29 \u2014 Elite Eight",
+                sub: "1 pick per player",
+                games: [
+                  { t: "2:15 PM", m: "(1) Michigan vs (6) Tennessee" },
+                  { t: "5:05 PM", m: "(1) Duke vs (2) UConn" },
                 ],
               },
             ].map((sec, si) => (

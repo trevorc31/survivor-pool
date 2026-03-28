@@ -37,6 +37,12 @@
       "Iowa": "won", "Nebraska": "lost",
       "Arizona": "won", "Arkansas": "lost",
       "Illinois": "won", "Houston": "lost"
+    },
+    "day6": {
+      "Duke": "won", "St. John's": "lost",
+      "Michigan": "won", "Alabama": "lost",
+      "UConn": "won", "Michigan State": "lost",
+      "Tennessee": "won", "Iowa State": "lost"
     }
   },
   "scores": {
@@ -76,6 +82,12 @@
       "Iowa": "77-71 vs Nebraska", "Nebraska": "71-77 vs Iowa",
       "Arizona": "W vs Arkansas", "Arkansas": "L vs Arizona",
       "Illinois": "65-55 vs Houston", "Houston": "55-65 vs Illinois"
+    },
+    "day6": {
+      "Duke": "80-75 vs St. John's", "St. John's": "75-80 vs Duke",
+      "Michigan": "90-77 vs Alabama", "Alabama": "77-90 vs Michigan",
+      "UConn": "67-63 vs Michigan State", "Michigan State": "63-67 vs UConn",
+      "Tennessee": "76-62 vs Iowa State", "Iowa State": "62-76 vs Tennessee"
     }
   },
   "days": [
@@ -85,6 +97,7 @@
     { "id": "day4", "label": "Day 4", "date": "Sun 3/22", "dayOfWeek": "sunday", "advPicks": 1, "bbPicks": 4 },
     { "id": "day5", "label": "Day 5", "date": "Thu 3/26", "dayOfWeek": "thursday", "advPicks": 1, "bbPicks": null },
     { "id": "day6", "label": "Day 6", "date": "Fri 3/27", "dayOfWeek": "friday", "advPicks": 1, "bbPicks": null },
-    { "id": "day7", "label": "Day 7", "date": "Sat 3/28", "dayOfWeek": "saturday", "advPicks": 1, "bbPicks": null }
+    { "id": "day7", "label": "Day 7", "date": "Sat 3/28", "dayOfWeek": "saturday", "advPicks": 1, "bbPicks": null },
+    { "id": "day8", "label": "Day 8", "date": "Sun 3/29", "dayOfWeek": "sunday", "advPicks": 1, "bbPicks": null }
   ]
 }
